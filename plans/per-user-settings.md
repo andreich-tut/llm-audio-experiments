@@ -90,3 +90,48 @@ Clicking "Set X":
 3. User sends value → saved to `user_settings` → bot returns to submenu
 
 Clicking "Reset" / "Clear": removes user's override, falls back to global default.
+
+---
+
+## Registration UX options (per setting type)
+
+### Option A: Telegram Mini App (Web App)
+
+A button opens an in-app browser with a hosted HTTPS page. The page handles OAuth
+redirects and forms, then calls `window.Telegram.WebApp.sendData(json)` to pass
+credentials back to the bot.
+
+- **Pros**: Full OAuth support, real forms, good UX
+- **Cons**: Requires a hosted HTTPS page
+
+Best for: Yandex OAuth (get a token instead of storing login/password)
+
+### Option B: URL button → external OAuth → webhook callback
+
+1. Bot sends a button with the OAuth authorization URL
+2. User authorizes in browser
+3. Service redirects to your callback URL
+4. Callback stores the token and notifies the bot
+
+- **Pros**: Standard OAuth2 flow, no credentials stored
+- **Cons**: Requires a public URL (webhook server), more infrastructure
+
+### Option C: Text FSM (current plan)
+
+User pastes credentials/keys as text messages in the chat.
+
+- **Pros**: Zero extra infrastructure, works now
+- **Cons**: Not suitable for OAuth; passwords in chat history
+
+---
+
+## Recommended approach per setting
+
+| Setting         | Recommended UX                            |
+|-----------------|-------------------------------------------|
+| LLM API Key     | Text FSM — user pastes key in chat        |
+| Yandex Disk     | Mini App or URL button → Yandex OAuth2    |
+| Obsidian path   | Text FSM — just a local path string       |
+
+The FSM plan above covers LLM API Key and Obsidian path well as-is.
+Yandex Disk ideally uses OAuth to avoid storing login/password.

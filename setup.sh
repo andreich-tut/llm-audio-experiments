@@ -60,49 +60,22 @@ else
     warn "Consider setting WHISPER_BACKEND=groq in .env for cloud STT"
 fi
 
-# ── Python virtual environment ─────────────────────────────────────────────────
-step "Setting up Python virtual environment"
-if [ ! -d "$SCRIPT_DIR/venv" ]; then
-    python3 -m venv "$SCRIPT_DIR/venv"
-    info "venv created at $SCRIPT_DIR/venv"
-else
-    info "venv already exists, reusing"
-fi
-
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/venv/bin/activate"
-pip install --upgrade pip -q
-
-# ── Python dependencies ────────────────────────────────────────────────────────
-step "Installing Python dependencies"
-pip install -r "$SCRIPT_DIR/requirements.txt" -q
-
-if $HAS_CUDA; then
-    info "Installing onnxruntime-gpu for CUDA acceleration"
-    pip install onnxruntime-gpu -q
-else
-    info "Installing onnxruntime (CPU)"
-    pip install onnxruntime -q
-fi
-
-# ── .env setup ─────────────────────────────────────────────────────────────────
-step "Configuring .env"
-if [ ! -f "$SCRIPT_DIR/.env" ]; then
-    cp "$SCRIPT_DIR/.env.example" "$SCRIPT_DIR/.env"
-    # If no GPU/CUDA, switch defaults to CPU/groq
-    if ! $HAS_CUDA; then
-        sed -i 's/^WHISPER_DEVICE=cuda/WHISPER_DEVICE=cpu/' "$SCRIPT_DIR/.env"
-    fi
-    info ".env created from .env.example"
-else
-    warn ".env already exists — not overwritten"
-fi
-
 # ── Done ───────────────────────────────────────────────────────────────────────
 step "Setup complete"
 echo
-echo "Next steps:"
-echo "  1. Edit .env and fill in required values:"
+echo "OS packages installed. Next steps:"
+echo "  1. Set up Python venv and install dependencies:"
+echo "       python3 -m venv venv"
+echo "       source venv/bin/activate"
+echo "       pip install -r requirements.txt"
+if $HAS_CUDA; then
+    echo "       pip install onnxruntime-gpu"
+else
+    echo "       pip install onnxruntime"
+fi
+echo
+echo "  2. Edit .env and fill in required values:"
+echo "       cp .env.example .env"
 echo "       BOT_TOKEN   — from @BotFather on Telegram"
 echo "       LLM_API_KEY — from https://openrouter.ai/keys (free tier available)"
 if ! $HAS_CUDA; then
@@ -111,7 +84,3 @@ if ! $HAS_CUDA; then
     echo "       WHISPER_BACKEND=groq  + GROQ_API_KEY  (cloud, free tier, recommended)"
     echo "       WHISPER_BACKEND=local + WHISPER_DEVICE=cpu  (local, slow)"
 fi
-echo
-echo "  2. Activate the venv and start the bot:"
-echo "       source $SCRIPT_DIR/venv/bin/activate"
-echo "       python $SCRIPT_DIR/bot.py"
