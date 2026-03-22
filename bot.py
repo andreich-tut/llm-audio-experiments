@@ -20,7 +20,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.filters import CommandStart, Command
 from aiogram.enums import ParseMode
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, BufferedInputFile
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, BufferedInputFile, BotCommand
 
 from config import (
     BOT_TOKEN, TOR_PROXY, LLM_MODEL, WHISPER_MODEL, WHISPER_DEVICE,
@@ -728,6 +728,18 @@ async def main():
     logger.info("Starting bot... Model: %s, Whisper: %s (%s), Allowed users: %s, GDocs: %s",
                 LLM_MODEL, WHISPER_MODEL, WHISPER_DEVICE,
                 ALLOWED_USER_IDS or "all", "enabled" if gdocs_service else "disabled")
+    commands = [
+        BotCommand(command="mode", description="Выбрать режим (чат / расшифровка / заметка)"),
+        BotCommand(command="stop", description="Остановить текущую обработку"),
+        BotCommand(command="clear", description="Очистить историю диалога"),
+        BotCommand(command="model", description="Текущая модель"),
+        BotCommand(command="ping", description="Проверить LLM API"),
+        BotCommand(command="limits", description="Лимиты бесплатных API"),
+        BotCommand(command="start", description="Помощь"),
+    ]
+    if gdocs_service:
+        commands.append(BotCommand(command="savedoc", description="Сохранять расшифровки в Google Docs"))
+    await bot.set_my_commands(commands)
     await dp.start_polling(bot)
 
 
