@@ -8,7 +8,7 @@ sleep 3
 # Register if not yet registered
 if ! warp-cli registration show 2>/dev/null | grep -q "Device ID"; then
     echo "Registering Warp..."
-    warp-cli registration new
+    warp-cli registration new --accept-tos
 fi
 
 warp-cli mode warp
