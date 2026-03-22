@@ -41,9 +41,7 @@ def main():
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    parser = argparse.ArgumentParser(
-        description="Diarize all audio chunks in test/ and save to test/source.txt"
-    )
+    parser = argparse.ArgumentParser(description="Diarize all audio chunks in test/ and save to test/source.txt")
     parser.add_argument("--no-diarize", action="store_true", help="Transcribe only, skip speaker diarization")
     parser.add_argument("--min-speakers", type=int, default=None)
     parser.add_argument("--max-speakers", type=int, default=None)
@@ -53,10 +51,7 @@ def main():
 
     diarize = not args.no_diarize
 
-    chunks = sorted(
-        p for p in TEST_DIR.iterdir()
-        if p.is_file() and p.suffix.lower() in AUDIO_EXTENSIONS
-    )
+    chunks = sorted(p for p in TEST_DIR.iterdir() if p.is_file() and p.suffix.lower() in AUDIO_EXTENSIONS)
 
     if not chunks:
         logger.error("No audio files found in %s", TEST_DIR)

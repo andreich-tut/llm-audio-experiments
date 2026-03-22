@@ -51,6 +51,7 @@ async def save_note(filename: str, content: str) -> str:
 
 # ── local ────────────────────────────────────────────────────────────────────
 
+
 def _save_local(filename: str, content: str) -> str:
     vault = Path(OBSIDIAN_VAULT_PATH)
     folder = vault / OBSIDIAN_INBOX_FOLDER if OBSIDIAN_INBOX_FOLDER else vault
@@ -68,6 +69,7 @@ def _save_local(filename: str, content: str) -> str:
 
 
 # ── Yandex.Disk WebDAV ───────────────────────────────────────────────────────
+
 
 async def _save_webdav(filename: str, content: str) -> str:
     auth = (YANDEX_DISK_LOGIN, YANDEX_DISK_PASSWORD)

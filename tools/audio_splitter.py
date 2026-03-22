@@ -10,21 +10,33 @@ MAX_MINUTES = None  # split by time if set (e.g. 10 = 10 minutes per chunk)
 
 def probe(path):
     result = subprocess.run(
-        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration,size",
-         "-of", "csv=p=0", path],
-        capture_output=True, text=True
+        ["ffprobe", "-v", "quiet", "-show_entries", "format=duration,size", "-of", "csv=p=0", path],
+        capture_output=True,
+        text=True,
     )
     parts = result.stdout.strip().split(",")
     return float(parts[0]), int(parts[1])
 
 
 def split(input_path, start, duration, output_path):
-    subprocess.run([
-        "ffmpeg", "-y", "-ss", str(start), "-i", input_path,
-        "-t", str(duration), "-c", "copy",
-        "-avoid_negative_ts", "make_zero",
-        output_path
-    ], capture_output=True)
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-ss",
+            str(start),
+            "-i",
+            input_path,
+            "-t",
+            str(duration),
+            "-c",
+            "copy",
+            "-avoid_negative_ts",
+            "make_zero",
+            output_path,
+        ],
+        capture_output=True,
+    )
 
 
 def split_file(input_path, prefix=None, max_minutes=None) -> list[str]:
@@ -36,7 +48,7 @@ def split_file(input_path, prefix=None, max_minutes=None) -> list[str]:
         prefix = os.path.join(src_dir, src_stem)
 
     duration, size = probe(input_path)
-    print(f"Duration: {duration:.1f}s | Size: {size/1024/1024:.1f}MB")
+    print(f"Duration: {duration:.1f}s | Size: {size / 1024 / 1024:.1f}MB")
 
     if max_minutes is not None:
         chunk_duration = max_minutes * 60.0
@@ -83,10 +95,15 @@ def split_file(input_path, prefix=None, max_minutes=None) -> list[str]:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("input", nargs="?", default=INPUT)
-    parser.add_argument("--minutes", type=float, default=MAX_MINUTES, help="Max minutes per chunk (default: split by size)")
-    parser.add_argument("--prefix", default=None, help="Output filename prefix (default: same dir as input, named after source file)")
+    parser.add_argument(
+        "--minutes", type=float, default=MAX_MINUTES, help="Max minutes per chunk (default: split by size)"
+    )
+    parser.add_argument(
+        "--prefix", default=None, help="Output filename prefix (default: same dir as input, named after source file)"
+    )
     args = parser.parse_args()
     chunks = split_file(args.input, prefix=args.prefix, max_minutes=args.minutes)
     print(f"\nDone: {len(chunks)} chunk(s)")

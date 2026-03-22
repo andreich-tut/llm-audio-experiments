@@ -97,9 +97,7 @@ YANDEX_DISK_PATH = os.getenv("YANDEX_DISK_PATH", "ObsidianVault")
 # ──────────────────────────────────────────────
 YT_MAX_DURATION = int(os.getenv("YT_MAX_DURATION", "7200"))
 YT_COOKIES_FILE = os.getenv("YT_COOKIES_FILE", "")
-YT_URL_RE = re.compile(
-    r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([\w-]{11})'
-)
+YT_URL_RE = re.compile(r"(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([\w-]{11})")
 
 # ──────────────────────────────────────────────
 # HuggingFace
@@ -123,8 +121,7 @@ ALLOWED_USERS = os.getenv("ALLOWED_USERS", "")
 ALLOWED_USER_IDS: set[int] = set()
 if ALLOWED_USERS.strip():
     ALLOWED_USER_IDS = {
-        int(uid.strip()) for uid in ALLOWED_USERS.split(",")
-        if uid.strip() and uid.strip().lstrip("-").isdigit()
+        int(uid.strip()) for uid in ALLOWED_USERS.split(",") if uid.strip() and uid.strip().lstrip("-").isdigit()
     }
 
 # ──────────────────────────────────────────────

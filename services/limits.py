@@ -57,10 +57,7 @@ def format_limits_message(or_data: dict | None, groq_data: dict | None) -> str:
 
         limit_str = f"${limit:.4f}" if limit is not None else "без лимита"
         parts.append(
-            f"\n🤖 *OpenRouter (LLM)*"
-            f"\nМодель: `{LLM_MODEL}`"
-            f"\nТариф: {tier}"
-            f"\nПотрачено: ${usage:.4f} / {limit_str}"
+            f"\n🤖 *OpenRouter (LLM)*\nМодель: `{LLM_MODEL}`\nТариф: {tier}\nПотрачено: ${usage:.4f} / {limit_str}"
         )
         if rate:
             parts.append(f"Rate limit: {rate.get('requests')} req/{rate.get('interval')}")

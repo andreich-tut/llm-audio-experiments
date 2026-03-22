@@ -41,8 +41,9 @@ async def ask_ollama(user_id: int, user_message: str) -> str:
     """Send message to LLM with conversation history, return full response."""
     add_to_history(user_id, "user", user_message)
 
-    logger.info("LLM request: user_id=%d, history_len=%d, input_len=%d",
-                user_id, len(get_history(user_id)), len(user_message))
+    logger.info(
+        "LLM request: user_id=%d, history_len=%d, input_len=%d", user_id, len(get_history(user_id)), len(user_message)
+    )
     t0 = time.time()
 
     msg = await _chat_with_retry(

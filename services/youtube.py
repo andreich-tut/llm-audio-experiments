@@ -48,10 +48,7 @@ def _download_yt_sync(url: str, tmp_dir: str) -> tuple[str, str, int]:
     if is_live:
         raise ValueError("Прямые трансляции не поддерживаются.")
     if duration > YT_MAX_DURATION:
-        raise ValueError(
-            f"Видео слишком длинное ({duration // 60} мин). "
-            f"Максимум: {YT_MAX_DURATION // 60} мин."
-        )
+        raise ValueError(f"Видео слишком длинное ({duration // 60} мин). Максимум: {YT_MAX_DURATION // 60} мин.")
 
     # 2. Download audio only
     outtmpl = os.path.join(tmp_dir, "yt_audio.%(ext)s")
@@ -59,10 +56,12 @@ def _download_yt_sync(url: str, tmp_dir: str) -> tuple[str, str, int]:
         **_common_opts,
         "format": "bestaudio[ext=m4a]/bestaudio/best",
         "outtmpl": outtmpl,
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "m4a",
-        }],
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "m4a",
+            }
+        ],
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
@@ -99,6 +98,7 @@ def wants_diarize(text: str) -> bool:
 async def transcribe_diarized(file_path: str) -> str:
     """Run whisperX diarization pipeline in a thread. Returns formatted transcript."""
     import sys as _sys
+
     _sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
     from transcribe_diarize import format_transcript, transcribe_file
 

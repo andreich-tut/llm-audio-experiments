@@ -18,6 +18,7 @@ if GDOCS_CREDENTIALS_FILE and GDOCS_DOCUMENT_ID:
     try:
         from google.oauth2 import service_account
         from googleapiclient.discovery import build as _gdocs_build
+
         _creds = service_account.Credentials.from_service_account_file(
             GDOCS_CREDENTIALS_FILE,
             scopes=["https://www.googleapis.com/auth/documents"],
@@ -42,6 +43,7 @@ async def save_to_gdocs(user_id: int, username: str | None, text: str) -> None:
 
     loop = asyncio.get_event_loop()
     try:
+
         def _append():
             doc = gdocs_service.documents().get(documentId=GDOCS_DOCUMENT_ID).execute()
             end_index = doc["body"]["content"][-1]["endIndex"] - 1

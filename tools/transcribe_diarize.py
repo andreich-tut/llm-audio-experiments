@@ -102,6 +102,7 @@ def transcribe_file(
     import gc
 
     import torch
+
     del model
     gc.collect()
     if WHISPER_DEVICE == "cuda":
@@ -174,12 +175,14 @@ def transcribe_file(
 
     segments = []
     for seg in result["segments"]:
-        segments.append({
-            "start": seg["start"],
-            "end": seg["end"],
-            "speaker": seg.get("speaker", "UNKNOWN"),
-            "text": seg["text"].strip(),
-        })
+        segments.append(
+            {
+                "start": seg["start"],
+                "end": seg["end"],
+                "speaker": seg.get("speaker", "UNKNOWN"),
+                "text": seg["text"].strip(),
+            }
+        )
 
     speakers = {s["speaker"] for s in segments}
     logger.info("Done. %d segments, %d speakers: %s", len(segments), len(speakers), sorted(speakers))

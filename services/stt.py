@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 _whisper = None
 if WHISPER_BACKEND == "local":
     from faster_whisper import WhisperModel
+
     logger.info("Loading Whisper model '%s' on %s...", WHISPER_MODEL, WHISPER_DEVICE)
     _whisper = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type="int8")
     logger.info("Whisper ready.")
@@ -34,7 +35,10 @@ else:
 def _transcribe_local(file_path: str) -> tuple[str, str]:
     logger.info("Calling whisper.transcribe()...")
     segments, info = _whisper.transcribe(
-        file_path, language="ru", beam_size=5, vad_filter=True,
+        file_path,
+        language="ru",
+        beam_size=5,
+        vad_filter=True,
     )
     logger.info("Got segments generator, language=%s, duration=%.1fs", info.language, info.duration)
     parts = []
@@ -47,6 +51,7 @@ def _transcribe_local(file_path: str) -> tuple[str, str]:
 
 async def _transcribe_groq(file_path: str) -> str:
     import httpx
+
     logger.info("Calling Groq Whisper API for %s...", file_path)
     async with httpx.AsyncClient(timeout=120) as client:
         with open(file_path, "rb") as f:
@@ -88,5 +93,7 @@ async def transcribe(file_path: str) -> str:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     elapsed = time.time() - t0
-    logger.info("STT done: backend=%s, %.1fs, text_len=%d, preview=%s", WHISPER_BACKEND, elapsed, len(full_text), full_text[:80])
+    logger.info(
+        "STT done: backend=%s, %.1fs, text_len=%d, preview=%s", WHISPER_BACKEND, elapsed, len(full_text), full_text[:80]
+    )
     return full_text

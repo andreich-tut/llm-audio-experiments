@@ -108,11 +108,15 @@ _YT_LEVEL_LABELS = {"brief": "Кратко", "detailed": "Подробно", "ke
 
 def _yt_summary_keyboard(cache_key: str) -> InlineKeyboardMarkup:
     """Build inline keyboard with summary detail level buttons."""
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="Кратко", callback_data=f"yt:b:{cache_key}"),
-        InlineKeyboardButton(text="Подробно", callback_data=f"yt:d:{cache_key}"),
-        InlineKeyboardButton(text="Тезисы", callback_data=f"yt:k:{cache_key}"),
-    ]])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Кратко", callback_data=f"yt:b:{cache_key}"),
+                InlineKeyboardButton(text="Подробно", callback_data=f"yt:d:{cache_key}"),
+                InlineKeyboardButton(text="Тезисы", callback_data=f"yt:k:{cache_key}"),
+            ]
+        ]
+    )
 
 
 # ──────────────────────────────────────────────
@@ -140,9 +144,13 @@ def _mode_keyboard(current: str) -> InlineKeyboardMarkup:
 
 
 def _stop_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🛑 Стоп", callback_data="cancel"),
-    ]])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🛑 Стоп", callback_data="cancel"),
+            ]
+        ]
+    )
 
 
 def _get_audio_from_msg(msg: types.Message) -> tuple[str, str] | None:
@@ -155,7 +163,13 @@ def _get_audio_from_msg(msg: types.Message) -> tuple[str, str] | None:
         return msg.video_note.file_id, ".mp4"
     if msg.video:
         mime = msg.video.mime_type or ""
-        suffix = ".webm" if "webm" in mime else ".mp4" if "mp4" in mime else (Path(msg.video.file_name or "video").suffix or ".mp4")
+        suffix = (
+            ".webm"
+            if "webm" in mime
+            else ".mp4"
+            if "mp4" in mime
+            else (Path(msg.video.file_name or "video").suffix or ".mp4")
+        )
         return msg.video.file_id, suffix
     if msg.document:
         mime = msg.document.mime_type or ""
@@ -177,22 +191,17 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
         # 1. Download audio
         audio_path, title, duration = await download_yt_audio(url)
         duration_min = duration // 60
-        await processing_msg.edit_text(
-            f"🎙 Расшифровываю: {title} ({duration_min} мин)..."
-        )
+        await processing_msg.edit_text(f"🎙 Расшифровываю: {title} ({duration_min} мин)...")
 
         # 2. Transcribe
         if diarize:
             if not HF_TOKEN:
                 await processing_msg.edit_text(
-                    "⚠️ Для распознавания спикеров нужен HF_TOKEN в .env. "
-                    "Расшифровываю без спикеров..."
+                    "⚠️ Для распознавания спикеров нужен HF_TOKEN в .env. Расшифровываю без спикеров..."
                 )
                 transcript_text = await transcribe(audio_path)
             else:
-                await processing_msg.edit_text(
-                    f"🎙 Расшифровываю со спикерами: {title} ({duration_min} мин)..."
-                )
+                await processing_msg.edit_text(f"🎙 Расшифровываю со спикерами: {title} ({duration_min} мин)...")
                 transcript_text = await transcribe_diarized(audio_path)
         else:
             transcript_text = await transcribe(audio_path)
@@ -203,7 +212,7 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
 
         # 3. Send transcript as .txt file
         transcript_bytes = transcript_text.encode("utf-8")
-        safe_title = re.sub(r'[^\w\s-]', '', title)[:50].strip() or "transcript"
+        safe_title = re.sub(r"[^\w\s-]", "", title)[:50].strip() or "transcript"
         doc = BufferedInputFile(transcript_bytes, filename=f"{safe_title}.txt")
         await message.answer_document(doc, caption="📄 Полная расшифровка")
 
@@ -229,7 +238,7 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
         if len(full_msg) > 4000:
             await processing_msg.edit_text(header, parse_mode=ParseMode.MARKDOWN, reply_markup=None)
             for i in range(0, len(summary), 4000):
-                await message.answer(summary[i:i + 4000])
+                await message.answer(summary[i : i + 4000])
             await message.answer(
                 "Выберите формат саммари:",
                 reply_markup=_yt_summary_keyboard(cache_key),
@@ -261,6 +270,7 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
                 parent = os.path.dirname(audio_path)
                 if parent and os.path.basename(parent).startswith("tmp"):
                     import shutil
+
                     shutil.rmtree(parent, ignore_errors=True)
             except OSError as e:
                 logger.warning("Failed to clean up temp file %s: %s", audio_path, e)
@@ -271,8 +281,13 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
 # ──────────────────────────────────────────────
 async def _process_audio(message: types.Message, file_id: str, suffix: str):
     """Download audio file → transcribe → (LLM if chat mode) → reply."""
-    logger.info("Audio: user_id=%d, type=%s, mode=%s, file_id=%s",
-                message.from_user.id, suffix, get_mode(message.from_user.id), file_id[:20])
+    logger.info(
+        "Audio: user_id=%d, type=%s, mode=%s, file_id=%s",
+        message.from_user.id,
+        suffix,
+        get_mode(message.from_user.id),
+        file_id[:20],
+    )
     processing_msg = await message.answer("🎙 Распознаю голос...", reply_markup=_stop_keyboard())
 
     try:
@@ -312,15 +327,7 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
             all_tags = ["voice-note"] + tags
             tags_yaml = "[" + ", ".join(all_tags) + "]"
 
-            note_md = (
-                f"---\n"
-                f"date: {date_str}\n"
-                f"time: {time_str}\n"
-                f"tags: {tags_yaml}\n"
-                f"---\n\n"
-                f"# {title}\n\n"
-                f"{body}\n"
-            )
+            note_md = f"---\ndate: {date_str}\ntime: {time_str}\ntags: {tags_yaml}\n---\n\n# {title}\n\n{body}\n"
 
             safe_title = re.sub(r"[^\w\s-]", "", title)[:40].strip() or "note"
             filename = f"{date_str}-{safe_title.replace(' ', '-')}.md"
@@ -349,9 +356,11 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
 
         full_text = f"📝 *Распознано:*\n_{_escape_md(user_text)}_\n\n🤖 *Ответ:*\n{response}"
         if len(full_text) > 4000:
-            await processing_msg.edit_text(f"📝 _{_escape_md(user_text)}_", parse_mode=ParseMode.MARKDOWN, reply_markup=None)
+            await processing_msg.edit_text(
+                f"📝 _{_escape_md(user_text)}_", parse_mode=ParseMode.MARKDOWN, reply_markup=None
+            )
             for i in range(0, len(response), 4000):
-                await message.answer(response[i:i + 4000])
+                await message.answer(response[i : i + 4000])
         else:
             await processing_msg.edit_text(full_text, parse_mode=ParseMode.MARKDOWN, reply_markup=None)
 
@@ -364,7 +373,9 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
     except Exception as e:
         if "file is too big" in str(e).lower():
             logger.warning("Audio file too big: user_id=%d, file_id=%s", message.from_user.id, file_id[:20])
-            await processing_msg.edit_text("❌ Файл слишком большой. Telegram Bot API ограничивает загрузку файлов до 20 МБ.", reply_markup=None)
+            await processing_msg.edit_text(
+                "❌ Файл слишком большой. Telegram Bot API ограничивает загрузку файлов до 20 МБ.", reply_markup=None
+            )
         else:
             logger.exception("Audio processing error: user_id=%d", message.from_user.id)
             await processing_msg.edit_text(f"❌ Ошибка: {e}", reply_markup=None)
@@ -465,8 +476,7 @@ async def cmd_savedoc(message: types.Message):
         return
     if gdocs_service is None:
         await message.answer(
-            "❌ Google Docs не настроен.\n"
-            "Добавь GDOCS_CREDENTIALS_FILE и GDOCS_DOCUMENT_ID в .env и перезапусти бота."
+            "❌ Google Docs не настроен.\nДобавь GDOCS_CREDENTIALS_FILE и GDOCS_DOCUMENT_ID в .env и перезапусти бота."
         )
         return
     enabled = not user_gdocs.get(message.from_user.id, False)
@@ -607,7 +617,7 @@ async def _process_text(message: types.Message):
         if len(response) > 4000:
             await processing_msg.delete()
             for i in range(0, len(response), 4000):
-                await message.answer(response[i:i + 4000])
+                await message.answer(response[i : i + 4000])
         else:
             await processing_msg.edit_text(response, reply_markup=None)
 
@@ -686,9 +696,7 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
     await callback.message.edit_text("🤖 Генерирую саммари...", reply_markup=None)
 
     try:
-        summary = await summarize_ollama(
-            entry["transcript"], detail_level, entry["title"]
-        )
+        summary = await summarize_ollama(entry["transcript"], detail_level, entry["title"])
 
         label = _YT_LEVEL_LABELS.get(detail_level, "")
         header = f"📋 *Саммари ({label}):*\n\n"
@@ -697,7 +705,7 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
         if len(full_msg) > 4000:
             await callback.message.edit_text(header, parse_mode=ParseMode.MARKDOWN)
             for i in range(0, len(summary), 4000):
-                await callback.message.answer(summary[i:i + 4000])
+                await callback.message.answer(summary[i : i + 4000])
             await callback.message.answer(
                 "Выберите формат саммари:",
                 reply_markup=_yt_summary_keyboard(cache_key),
@@ -737,9 +745,14 @@ async def main():
     if not BOT_TOKEN:
         logger.error("BOT_TOKEN is not set! Add it to .env")
         return
-    logger.info("Starting bot... Model: %s, Whisper: %s (%s), Allowed users: %s, GDocs: %s",
-                LLM_MODEL, WHISPER_MODEL, WHISPER_DEVICE,
-                ALLOWED_USER_IDS or "all", "enabled" if gdocs_service else "disabled")
+    logger.info(
+        "Starting bot... Model: %s, Whisper: %s (%s), Allowed users: %s, GDocs: %s",
+        LLM_MODEL,
+        WHISPER_MODEL,
+        WHISPER_DEVICE,
+        ALLOWED_USER_IDS or "all",
+        "enabled" if gdocs_service else "disabled",
+    )
     commands = [
         BotCommand(command="mode", description="Выбрать режим (чат / расшифровка / заметка)"),
         BotCommand(command="stop", description="Остановить текущую обработку"),

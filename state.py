@@ -35,7 +35,7 @@ def add_to_history(user_id: int, role: str, content: str):
     history.append({"role": role, "content": content})
     # Trim: keep last MAX_HISTORY message pairs
     if len(history) > MAX_HISTORY * 2:
-        conversations[user_id] = history[-(MAX_HISTORY * 2):]
+        conversations[user_id] = history[-(MAX_HISTORY * 2) :]
 
 
 def clear_history(user_id: int):
