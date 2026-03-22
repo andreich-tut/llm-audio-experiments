@@ -34,6 +34,7 @@ from services.stt import transcribe
 from services.llm import ask_ollama, summarize_ollama, format_note_ollama, ping_llm
 from services.youtube import download_yt_audio, wants_diarize, transcribe_diarized
 from services.gdocs import gdocs_service, is_gdocs_enabled, save_to_gdocs
+from services.obsidian import is_obsidian_enabled, save_note
 
 # ──────────────────────────────────────────────
 # Telegram Bot
@@ -266,10 +267,20 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
 
             safe_title = re.sub(r"[^\w\s-]", "", title)[:40].strip() or "note"
             filename = f"{date_str}-{safe_title.replace(' ', '-')}.md"
+
+            vault_saved = False
+            if is_obsidian_enabled():
+                try:
+                    await save_note(filename, note_md)
+                    vault_saved = True
+                except Exception as e:
+                    logger.error("Failed to save note to Obsidian vault: %s", e)
+
             doc = BufferedInputFile(note_md.encode("utf-8"), filename=filename)
 
             tag_line = " ".join(f"#{t}" for t in all_tags)
-            caption = f"📓 {title}\n{tag_line}"
+            vault_line = "\n📁 Сохранено в vault" if vault_saved else ""
+            caption = f"📓 {title}\n{tag_line}{vault_line}"
             await processing_msg.delete()
             await message.answer_document(doc, caption=caption)
             return

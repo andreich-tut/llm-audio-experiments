@@ -1,5 +1,6 @@
 """
-Speech-to-text: faster-whisper transcription with audio chunking.
+Speech-to-text: faster-whisper (local) or Groq Whisper API (cloud).
+Controlled by WHISPER_BACKEND env var: "local" (default) or "groq".
 """
 
 import asyncio
@@ -11,9 +12,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from faster_whisper import WhisperModel
-
-from config import WHISPER_MODEL, WHISPER_DEVICE
+from config import WHISPER_BACKEND, WHISPER_MODEL, WHISPER_DEVICE, GROQ_API_KEY
 
 # Make tools/ importable
 sys.path.insert(0, str(Path(__file__).parent.parent / "tools"))
@@ -21,12 +20,18 @@ from audio_splitter import split_file
 
 logger = logging.getLogger(__name__)
 
-logger.info("Loading Whisper model '%s' on %s...", WHISPER_MODEL, WHISPER_DEVICE)
-_whisper = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type="int8")
-logger.info("Whisper ready.")
+# Load local model only when needed
+_whisper = None
+if WHISPER_BACKEND == "local":
+    from faster_whisper import WhisperModel
+    logger.info("Loading Whisper model '%s' on %s...", WHISPER_MODEL, WHISPER_DEVICE)
+    _whisper = WhisperModel(WHISPER_MODEL, device=WHISPER_DEVICE, compute_type="int8")
+    logger.info("Whisper ready.")
+else:
+    logger.info("STT backend: %s (local model not loaded)", WHISPER_BACKEND)
 
 
-def _transcribe_file(file_path: str) -> tuple[str, str]:
+def _transcribe_local(file_path: str) -> tuple[str, str]:
     logger.info("Calling whisper.transcribe()...")
     segments, info = _whisper.transcribe(
         file_path, language="ru", beam_size=5, vad_filter=True,
@@ -40,8 +45,25 @@ def _transcribe_file(file_path: str) -> tuple[str, str]:
     return " ".join(parts), info.language
 
 
+async def _transcribe_groq(file_path: str) -> str:
+    import httpx
+    logger.info("Calling Groq Whisper API for %s...", file_path)
+    async with httpx.AsyncClient(timeout=120) as client:
+        with open(file_path, "rb") as f:
+            response = await client.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                files={"file": (Path(file_path).name, f, "audio/ogg")},
+                data={"model": "whisper-large-v3", "language": "ru"},
+            )
+    response.raise_for_status()
+    text = response.json()["text"]
+    logger.info("Groq transcription done, text_len=%d", len(text))
+    return text
+
+
 async def transcribe(file_path: str) -> str:
-    """Run faster-whisper in a thread. Splits audio into 5-min chunks."""
+    """Transcribe audio file. Backend: WHISPER_BACKEND env var ("local" or "groq")."""
     loop = asyncio.get_event_loop()
     t0 = time.time()
     tmp_dir = tempfile.mkdtemp()
@@ -50,14 +72,19 @@ async def transcribe(file_path: str) -> str:
     logger.info("STT: split into %d chunks from %s", len(chunks), file_path)
     try:
         texts = []
-        lang = "ru"
-        for chunk in chunks:
-            text, lang = await loop.run_in_executor(None, _transcribe_file, chunk)
-            texts.append(text)
+        if WHISPER_BACKEND == "groq":
+            for chunk in chunks:
+                text = await _transcribe_groq(chunk)
+                texts.append(text)
+        else:
+            lang = "ru"
+            for chunk in chunks:
+                text, lang = await loop.run_in_executor(None, _transcribe_local, chunk)
+                texts.append(text)
         full_text = " ".join(t for t in texts if t)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     elapsed = time.time() - t0
-    logger.info("STT done: lang=%s, %.1fs, text_len=%d, preview=%s", lang, elapsed, len(full_text), full_text[:80])
+    logger.info("STT done: backend=%s, %.1fs, text_len=%d, preview=%s", WHISPER_BACKEND, elapsed, len(full_text), full_text[:80])
     return full_text

@@ -1,13 +1,15 @@
 # 🎙 Telegram Voice → LLM Bot
 
-Локальный Telegram-бот: голосовые сообщения → faster-whisper (STT) → Ollama (LLM) → текстовый ответ.
+Локальный Telegram-бот: голосовые сообщения → faster-whisper (STT) → LLM (OpenRouter / Ollama / любой OpenAI-совместимый API) → текстовый ответ.
 
 ## Требования
 
 - Python 3.11+
-- NVIDIA GPU с CUDA (для faster-whisper на GPU)
-- Ollama запущена и доступна на `localhost:11434`
 - Telegram Bot Token (получить у [@BotFather](https://t.me/BotFather))
+- API-ключ LLM: [OpenRouter](https://openrouter.ai/keys) (есть бесплатные модели) или другой OpenAI-совместимый провайдер
+- STT (на выбор):
+  - **Локально**: NVIDIA GPU с CUDA + faster-whisper (или CPU — медленнее)
+  - **Облако**: бесплатный API-ключ [Groq](https://console.groq.com) (без GPU)
 
 ## Быстрый старт
 
@@ -25,42 +27,99 @@ pip install -r requirements.txt
 
 # 4. Настрой конфиг
 cp .env.example .env
-# Отредактируй .env — вставь BOT_TOKEN и свой user ID
+# Обязательно: вставь BOT_TOKEN и LLM_API_KEY
+# Опционально: свой user ID в ALLOWED_USERS, путь к vault в OBSIDIAN_VAULT_PATH
 
-# 5. Убедись что Ollama запущена и модель скачана
-ollama pull qwen3:8b
-
-# 6. Запусти бота
+# 5. Запусти бота
 python bot.py
 ```
 
 ## Команды бота
 
-| Команда    | Описание                                     |
-|------------|----------------------------------------------|
-| `/start`   | Приветствие и инструкция                     |
-| `/mode`    | Переключить режим (чат / только расшифровка) |
-| `/clear`   | Очистить историю диалога                     |
-| `/model`   | Показать текущую модель                      |
-| `/ping`    | Проверить доступность Ollama                 |
-| `/savedoc` | Включить/выключить сохранение в Google Docs  |
+| Команда    | Описание                                                      |
+|------------|---------------------------------------------------------------|
+| `/start`   | Приветствие и инструкция                                      |
+| `/mode`    | Переключить режим: чат / только расшифровка / Obsidian-заметка |
+| `/clear`   | Очистить историю диалога                                      |
+| `/model`   | Показать текущую модель                                       |
+| `/ping`    | Проверить доступность LLM API                                 |
+| `/savedoc` | Включить/выключить сохранение в Google Docs                   |
 
 ## Использование
 
 1. Отправь голосовое сообщение — бот распознает речь и ответит
 2. Или просто напиши текстом — бот ответит через LLM
-3. Бот помнит контекст диалога (последние 20 пар сообщений)
+3. Отправь ссылку на YouTube — получишь расшифровку файлом + саммари с выбором формата
+4. Бот помнит контекст диалога (последние 20 пар сообщений)
 
-## Настройки Whisper
+### Режимы (`/mode`)
 
-| Модель    | VRAM   | Скорость | Качество RU |
-|-----------|--------|----------|-------------|
-| `tiny`    | ~1 GB  | ⚡⚡⚡   | ★★☆☆☆       |
-| `small`   | ~2 GB  | ⚡⚡     | ★★★☆☆       |
-| `medium`  | ~5 GB  | ⚡       | ★★★★☆       |
-| `large-v3`| ~10 GB | 🐢       | ★★★★★       |
+| Режим            | Поведение                                                              |
+|------------------|------------------------------------------------------------------------|
+| 💬 Чат           | Расшифровка голоса → LLM → ответ (по умолчанию)                       |
+| 🎙 Расшифровка   | Только распознавание речи, без LLM                                     |
+| 📓 Заметка       | Голос → структурированная Obsidian-заметка (Markdown) через LLM; автосохранение в vault если настроен |
 
-С RTX 4070 Ti Super (16GB) можно спокойно использовать `medium`, и даже `large-v3` если Ollama не нагружает GPU одновременно.
+## Настройки Whisper (STT)
+
+Бэкенд выбирается в `.env` переменной `WHISPER_BACKEND`:
+
+### Локальный (WHISPER_BACKEND=local)
+
+Запускает faster-whisper локально. Требует GPU (или CPU — медленнее).
+
+| Модель     | VRAM   | Скорость | Качество RU |
+|------------|--------|----------|-------------|
+| `tiny`     | ~1 GB  | ⚡⚡⚡   | ★★☆☆☆       |
+| `small`    | ~2 GB  | ⚡⚡     | ★★★☆☆       |
+| `medium`   | ~5 GB  | ⚡       | ★★★★☆       |
+| `large-v3` | ~10 GB | 🐢       | ★★★★★       |
+
+С RTX 4070 Ti Super (16GB) можно спокойно использовать `large-v3`.
+
+### Облако — Groq (WHISPER_BACKEND=groq)
+
+Использует `whisper-large-v3` через Groq API. Бесплатно, без GPU, качество как `large-v3`.
+
+1. Зарегистрируйся на [console.groq.com](https://console.groq.com)
+2. Создай API-ключ (API Keys → Create)
+3. Добавь в `.env`:
+   ```
+   WHISPER_BACKEND=groq
+   GROQ_API_KEY=gsk_your_key_here
+   ```
+
+## Obsidian vault (опционально)
+
+Бот может автоматически сохранять заметки (режим 📓) в Obsidian vault. Поддерживаются два режима:
+
+### Вариант 1 — Локальная папка (через клиент Яндекс.Диска)
+
+1. Убедись, что папка vault доступна локально (Яндекс.Диск синхронизирован).
+2. Добавь в `.env`:
+   ```
+   OBSIDIAN_VAULT_PATH=/home/user/YandexDisk/ObsidianVault
+   OBSIDIAN_INBOX_FOLDER=Inbox
+   ```
+
+### Вариант 2 — Яндекс.Диск WebDAV (прямой доступ к облаку)
+
+Не требует установки клиента Яндекс.Диска — файлы загружаются напрямую через WebDAV API.
+
+1. Создай пароль приложения: [id.yandex.ru/security/app-passwords](https://id.yandex.ru/security/app-passwords)
+2. Добавь в `.env`:
+   ```
+   YANDEX_DISK_LOGIN=yourname@yandex.ru
+   YANDEX_DISK_PASSWORD=your_app_password
+   YANDEX_DISK_PATH=ObsidianVault
+   OBSIDIAN_INBOX_FOLDER=Inbox
+   ```
+
+> Если заданы оба варианта — WebDAV имеет приоритет.
+
+Файлы сохраняются как `YYYY-MM-DD-название.md` с YAML-фронтматтером (date, time, tags). Если vault не настроен — заметки только отправляются в Telegram.
+
+---
 
 ## Google Docs (опционально)
 
@@ -113,9 +172,11 @@ python bot.py
 ## Архитектура
 
 ```
-Telegram Voice → download .ogg → faster-whisper (GPU) → текст
-                                                          ↓
-Telegram ← текстовый ответ ← Ollama API ← текст с контекстом
+Telegram Voice → download .ogg → STT (local: faster-whisper / cloud: Groq) → текст
+                                                                               ↓
+                                               чат: LLM API (OpenRouter) ← текст + история
+                                               расшифровка: вернуть текст
+                                               заметка: LLM → Markdown → Telegram + Obsidian vault
 ```
 
 ---

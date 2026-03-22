@@ -69,14 +69,29 @@ NOTE_PROMPT = (
 # ──────────────────────────────────────────────
 # Whisper (STT)
 # ──────────────────────────────────────────────
+WHISPER_BACKEND = os.getenv("WHISPER_BACKEND", "local")  # "local" or "groq"
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "medium")
 WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cuda")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 # ──────────────────────────────────────────────
 # Google Docs (optional)
 # ──────────────────────────────────────────────
 GDOCS_CREDENTIALS_FILE = os.getenv("GDOCS_CREDENTIALS_FILE", "")
 GDOCS_DOCUMENT_ID = os.getenv("GDOCS_DOCUMENT_ID", "")
+
+# ──────────────────────────────────────────────
+# Obsidian vault (optional)
+# ──────────────────────────────────────────────
+OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH", "")
+OBSIDIAN_INBOX_FOLDER = os.getenv("OBSIDIAN_INBOX_FOLDER", "Inbox")
+
+# ──────────────────────────────────────────────
+# Yandex.Disk WebDAV (optional — overrides local vault if set)
+# ──────────────────────────────────────────────
+YANDEX_DISK_LOGIN = os.getenv("YANDEX_DISK_LOGIN", "")
+YANDEX_DISK_PASSWORD = os.getenv("YANDEX_DISK_PASSWORD", "")
+YANDEX_DISK_PATH = os.getenv("YANDEX_DISK_PATH", "ObsidianVault")
 
 # ──────────────────────────────────────────────
 # YouTube
