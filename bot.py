@@ -131,6 +131,25 @@ def _stop_keyboard() -> InlineKeyboardMarkup:
     ]])
 
 
+def _get_audio_from_msg(msg: types.Message) -> tuple[str, str] | None:
+    """Return (file_id, suffix) if msg contains audio/voice/video, else None."""
+    if msg.voice:
+        return msg.voice.file_id, ".ogg"
+    if msg.audio:
+        return msg.audio.file_id, _audio_suffix(msg.audio.mime_type, msg.audio.file_name)
+    if msg.video_note:
+        return msg.video_note.file_id, ".mp4"
+    if msg.video:
+        mime = msg.video.mime_type or ""
+        suffix = ".webm" if "webm" in mime else ".mp4" if "mp4" in mime else (Path(msg.video.file_name or "video").suffix or ".mp4")
+        return msg.video.file_id, suffix
+    if msg.document:
+        mime = msg.document.mime_type or ""
+        if any(t in mime for t in ("audio", "video", "ogg", "webm", "mp4", "mp3", "m4a", "aac", "flac", "wav")):
+            return msg.document.file_id, _audio_suffix(mime, msg.document.file_name)
+    return None
+
+
 # ──────────────────────────────────────────────
 # YouTube: main processing pipeline
 # ──────────────────────────────────────────────
@@ -573,6 +592,14 @@ async def handle_text(message: types.Message):
         else:
             await message.answer("Нет активных задач.")
         return
+
+    # If replying to a message with audio — process that audio
+    if message.reply_to_message:
+        audio = _get_audio_from_msg(message.reply_to_message)
+        if audio:
+            file_id, suffix = audio
+            await _run_as_cancellable(message.from_user.id, _process_audio(message, file_id, suffix))
+            return
 
     # Check for YouTube URL
     yt_match = YT_URL_RE.search(message.text)
