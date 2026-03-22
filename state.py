@@ -2,6 +2,7 @@
 In-memory state: conversation history, user modes, YouTube transcript cache.
 """
 
+import asyncio
 import time
 
 from config import MAX_HISTORY, YT_CACHE_TTL
@@ -18,6 +19,9 @@ user_gdocs: dict[int, bool] = {}
 # YouTube transcript cache for inline button re-summarization
 # Key: 8-char hex ID, Value: {"transcript": str, "title": str, "ts": float}
 yt_transcripts: dict[str, dict] = {}
+
+# Per-user active processing task (for cancellation via /stop)
+active_tasks: dict[int, asyncio.Task] = {}
 
 
 def get_history(user_id: int) -> list[dict]:

@@ -28,7 +28,7 @@ from config import (
 )
 from state import (
     get_history, clear_history, get_mode, user_modes, user_gdocs,
-    yt_transcripts, cleanup_yt_cache,
+    yt_transcripts, cleanup_yt_cache, active_tasks,
 )
 from services.stt import transcribe
 from services.llm import ask_ollama, summarize_ollama, format_note_ollama, ping_llm
@@ -73,6 +73,18 @@ def _escape_md(text: str) -> str:
     return text
 
 
+async def _run_as_cancellable(user_id: int, coro) -> None:
+    """Run coroutine as a cancellable task, registered in active_tasks."""
+    task = asyncio.create_task(coro)
+    active_tasks[user_id] = task
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    finally:
+        active_tasks.pop(user_id, None)
+
+
 # ──────────────────────────────────────────────
 # YouTube: inline keyboard
 # ──────────────────────────────────────────────
@@ -113,13 +125,19 @@ def _mode_keyboard(current: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[buttons])
 
 
+def _stop_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="🛑 Стоп", callback_data="cancel"),
+    ]])
+
+
 # ──────────────────────────────────────────────
 # YouTube: main processing pipeline
 # ──────────────────────────────────────────────
 async def _process_youtube(message: types.Message, url: str, diarize: bool):
     """Download YouTube audio, transcribe, send transcript file, summarize with inline buttons."""
     logger.info("YouTube: user_id=%d, url=%s, diarize=%s", message.from_user.id, url, diarize)
-    processing_msg = await message.answer("📥 Загружаю аудио с YouTube...")
+    processing_msg = await message.answer("📥 Загружаю аудио с YouTube...", reply_markup=_stop_keyboard())
     audio_path = None
 
     try:
@@ -147,7 +165,7 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
             transcript_text = await transcribe(audio_path)
 
         if not transcript_text.strip():
-            await processing_msg.edit_text("🤷 Не удалось распознать речь в видео.")
+            await processing_msg.edit_text("🤷 Не удалось распознать речь в видео.", reply_markup=None)
             return
 
         # 3. Send transcript as .txt file
@@ -176,7 +194,7 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
         header = "📋 *Саммари:*\n\n"
         full_msg = header + summary
         if len(full_msg) > 4000:
-            await processing_msg.edit_text(header, parse_mode=ParseMode.MARKDOWN)
+            await processing_msg.edit_text(header, parse_mode=ParseMode.MARKDOWN, reply_markup=None)
             for i in range(0, len(summary), 4000):
                 await message.answer(summary[i:i + 4000])
             await message.answer(
@@ -190,12 +208,18 @@ async def _process_youtube(message: types.Message, url: str, diarize: bool):
                 reply_markup=_yt_summary_keyboard(cache_key),
             )
 
+    except asyncio.CancelledError:
+        try:
+            await processing_msg.edit_text("🛑 Остановлено.", reply_markup=None)
+        except Exception:
+            pass
+        raise
     except ValueError as e:
         logger.warning("YouTube validation error: user_id=%d, %s", message.from_user.id, e)
-        await processing_msg.edit_text(f"❌ {e}")
+        await processing_msg.edit_text(f"❌ {e}", reply_markup=None)
     except Exception as e:
         logger.exception("YouTube processing error: user_id=%d", message.from_user.id)
-        await processing_msg.edit_text(f"❌ Ошибка: {e}")
+        await processing_msg.edit_text(f"❌ Ошибка: {e}", reply_markup=None)
     finally:
         if audio_path:
             try:
@@ -216,7 +240,7 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
     """Download audio file → transcribe → (LLM if chat mode) → reply."""
     logger.info("Audio: user_id=%d, type=%s, mode=%s, file_id=%s",
                 message.from_user.id, suffix, get_mode(message.from_user.id), file_id[:20])
-    processing_msg = await message.answer("🎙 Распознаю голос...")
+    processing_msg = await message.answer("🎙 Распознаю голос...", reply_markup=_stop_keyboard())
 
     try:
         # 1. Download audio file
@@ -232,7 +256,7 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
             os.unlink(tmp_path)
 
         if not user_text.strip():
-            await processing_msg.edit_text("🤷 Не удалось распознать речь. Попробуй ещё раз.")
+            await processing_msg.edit_text("🤷 Не удалось распознать речь. Попробуй ещё раз.", reply_markup=None)
             return
 
         # 3. Save to Google Docs if enabled
@@ -241,7 +265,7 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
 
         # 4. Transcribe-only mode — just return the text
         if get_mode(message.from_user.id) == "transcribe":
-            await processing_msg.edit_text(user_text)
+            await processing_msg.edit_text(user_text, reply_markup=None)
             return
 
         # 5. Obsidian note mode — format transcription as a structured Markdown note
@@ -292,19 +316,25 @@ async def _process_audio(message: types.Message, file_id: str, suffix: str):
 
         full_text = f"📝 *Распознано:*\n_{_escape_md(user_text)}_\n\n🤖 *Ответ:*\n{response}"
         if len(full_text) > 4000:
-            await processing_msg.edit_text(f"📝 _{_escape_md(user_text)}_", parse_mode=ParseMode.MARKDOWN)
+            await processing_msg.edit_text(f"📝 _{_escape_md(user_text)}_", parse_mode=ParseMode.MARKDOWN, reply_markup=None)
             for i in range(0, len(response), 4000):
                 await message.answer(response[i:i + 4000])
         else:
-            await processing_msg.edit_text(full_text, parse_mode=ParseMode.MARKDOWN)
+            await processing_msg.edit_text(full_text, parse_mode=ParseMode.MARKDOWN, reply_markup=None)
 
+    except asyncio.CancelledError:
+        try:
+            await processing_msg.edit_text("🛑 Остановлено.", reply_markup=None)
+        except Exception:
+            pass
+        raise
     except Exception as e:
         if "file is too big" in str(e).lower():
             logger.warning("Audio file too big: user_id=%d, file_id=%s", message.from_user.id, file_id[:20])
-            await processing_msg.edit_text("❌ Файл слишком большой. Telegram Bot API ограничивает загрузку файлов до 20 МБ.")
+            await processing_msg.edit_text("❌ Файл слишком большой. Telegram Bot API ограничивает загрузку файлов до 20 МБ.", reply_markup=None)
         else:
             logger.exception("Audio processing error: user_id=%d", message.from_user.id)
-            await processing_msg.edit_text(f"❌ Ошибка: {e}")
+            await processing_msg.edit_text(f"❌ Ошибка: {e}", reply_markup=None)
 
 
 # ──────────────────────────────────────────────
@@ -324,6 +354,7 @@ async def cmd_start(message: types.Message):
         "   Добавь слово «спикеры» для распознавания говорящих.\n\n"
         "Команды:\n"
         "/mode — выбрать режим (чат / расшифровка / Obsidian-заметка)\n"
+        "/stop — остановить текущую обработку (или напиши «стоп»)\n"
         "/clear — очистить историю диалога\n"
         "/model — текущая модель\n"
         f"/ping — проверить Claude API{gdocs_line}",
@@ -357,6 +388,23 @@ async def handle_mode_callback(callback: CallbackQuery):
         _MODE_DESCRIPTIONS[new_mode],
         reply_markup=_mode_keyboard(new_mode),
     )
+
+
+@dp.callback_query(F.data == "cancel")
+async def handle_cancel_callback(callback: CallbackQuery):
+    """Handle 🛑 Стоп button press on a processing status message."""
+    user_id = callback.from_user.id
+    task = active_tasks.get(user_id)
+    if task and not task.done():
+        task.cancel()
+        logger.info("Task cancelled via inline button: user_id=%d", user_id)
+        await callback.answer("🛑 Остановлено")
+    else:
+        await callback.answer("Задача уже завершена")
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
 
 
 @dp.message(Command("clear"))
@@ -398,6 +446,20 @@ async def cmd_savedoc(message: types.Message):
         await message.answer("🔇 Сохранение в Google Docs выключено.")
 
 
+@dp.message(Command("stop"))
+async def cmd_stop(message: types.Message):
+    if not is_allowed(message.from_user.id):
+        return
+    user_id = message.from_user.id
+    task = active_tasks.get(user_id)
+    if task and not task.done():
+        task.cancel()
+        logger.info("Task cancelled via /stop: user_id=%d", user_id)
+        await message.answer("🛑 Остановлено.")
+    else:
+        await message.answer("Нет активных задач.")
+
+
 @dp.message(Command("ping"))
 async def cmd_ping(message: types.Message):
     logger.info("/ping from user_id=%d", message.from_user.id)
@@ -419,7 +481,7 @@ async def handle_voice(message: types.Message):
     """Process Telegram voice messages (.ogg)."""
     if not is_allowed(message.from_user.id):
         return
-    await _process_audio(message, message.voice.file_id, ".ogg")
+    await _run_as_cancellable(message.from_user.id, _process_audio(message, message.voice.file_id, ".ogg"))
 
 
 @dp.message(F.audio)
@@ -428,7 +490,7 @@ async def handle_audio(message: types.Message):
     if not is_allowed(message.from_user.id):
         return
     suffix = _audio_suffix(message.audio.mime_type, message.audio.file_name)
-    await _process_audio(message, message.audio.file_id, suffix)
+    await _run_as_cancellable(message.from_user.id, _process_audio(message, message.audio.file_id, suffix))
 
 
 @dp.message(F.video_note)
@@ -436,7 +498,7 @@ async def handle_video_note(message: types.Message):
     """Process video notes (round video messages, typically .mp4)."""
     if not is_allowed(message.from_user.id):
         return
-    await _process_audio(message, message.video_note.file_id, ".mp4")
+    await _run_as_cancellable(message.from_user.id, _process_audio(message, message.video_note.file_id, ".mp4"))
 
 
 @dp.message(F.document)
@@ -449,7 +511,7 @@ async def handle_document(message: types.Message):
         await message.answer("⚠️ Поддерживаются только аудио/видео файлы.")
         return
     suffix = _audio_suffix(mime, message.document.file_name)
-    await _process_audio(message, message.document.file_id, suffix)
+    await _run_as_cancellable(message.from_user.id, _process_audio(message, message.document.file_id, suffix))
 
 
 @dp.message(F.video)
@@ -464,7 +526,31 @@ async def handle_video(message: types.Message):
         suffix = ".mp4"
     else:
         suffix = Path(message.video.file_name or "video").suffix or ".mp4"
-    await _process_audio(message, message.video.file_id, suffix)
+    await _run_as_cancellable(message.from_user.id, _process_audio(message, message.video.file_id, suffix))
+
+
+async def _process_text(message: types.Message):
+    """Send text message to LLM and reply."""
+    processing_msg = await message.answer("⏳ Думаю...", reply_markup=_stop_keyboard())
+    try:
+        response = await ask_ollama(message.from_user.id, message.text)
+
+        if len(response) > 4000:
+            await processing_msg.delete()
+            for i in range(0, len(response), 4000):
+                await message.answer(response[i:i + 4000])
+        else:
+            await processing_msg.edit_text(response, reply_markup=None)
+
+    except asyncio.CancelledError:
+        try:
+            await processing_msg.edit_text("🛑 Остановлено.", reply_markup=None)
+        except Exception:
+            pass
+        raise
+    except Exception as e:
+        logger.exception("Text processing error")
+        await processing_msg.edit_text(f"❌ Ошибка: {e}", reply_markup=None)
 
 
 @dp.message(F.text)
@@ -477,30 +563,27 @@ async def handle_text(message: types.Message):
         logger.debug("Ignoring unknown command from user_id=%d: %s", message.from_user.id, message.text.split()[0])
         return
 
+    # Stop command as plain text
+    if message.text.strip().lower() in ("стоп", "stop"):
+        user_id = message.from_user.id
+        task = active_tasks.get(user_id)
+        if task and not task.done():
+            task.cancel()
+            logger.info("Task cancelled via text stop: user_id=%d", user_id)
+        else:
+            await message.answer("Нет активных задач.")
+        return
+
     # Check for YouTube URL
     yt_match = YT_URL_RE.search(message.text)
     if yt_match:
         video_id = yt_match.group(1)
         url = f"https://www.youtube.com/watch?v={video_id}"
         diarize = wants_diarize(message.text)
-        await _process_youtube(message, url, diarize)
+        await _run_as_cancellable(message.from_user.id, _process_youtube(message, url, diarize))
         return
 
-    processing_msg = await message.answer("⏳ Думаю...")
-
-    try:
-        response = await ask_ollama(message.from_user.id, message.text)
-
-        if len(response) > 4000:
-            await processing_msg.delete()
-            for i in range(0, len(response), 4000):
-                await message.answer(response[i:i + 4000])
-        else:
-            await processing_msg.edit_text(response)
-
-    except Exception as e:
-        logger.exception("Text processing error")
-        await processing_msg.edit_text(f"❌ Ошибка: {e}")
+    await _run_as_cancellable(message.from_user.id, _process_text(message))
 
 
 @dp.callback_query(F.data.startswith("yt:"))
