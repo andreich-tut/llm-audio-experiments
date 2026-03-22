@@ -26,14 +26,20 @@ sudo apt-get install -y \
 info "ffprobe: $(ffprobe -version 2>&1 | head -1)"
 info "Python:  $(python3 --version)"
 
+# ── Python venv ────────────────────────────────────────────────────────────────
+step "Setting up Python virtual environment"
+cd "$SCRIPT_DIR"
+python3 -m venv venv
+venv/bin/pip install --upgrade pip -q
+venv/bin/pip install -r requirements.txt
+info "Dependencies installed into venv/"
+
 # ── Done ───────────────────────────────────────────────────────────────────────
 step "Setup complete"
 echo
-echo "OS packages installed. Next steps:"
-echo "  1. Set up Python venv and install dependencies:"
-echo "       python3 -m venv venv"
+echo "Next steps:"
+echo "  1. Activate the venv before running:"
 echo "       source venv/bin/activate"
-echo "       pip install -r requirements.txt"
 echo
 echo "  2. Edit .env and fill in required values:"
 echo "       cp .env.example .env"
