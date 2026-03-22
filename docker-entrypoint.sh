@@ -12,10 +12,10 @@ warp-svc &
 WARP_PID=$!
 trap "kill $WARP_PID 2>/dev/null" EXIT
 
-# Wait for warp-svc to be ready
+# Wait for warp-svc to accept IPC connections (status exits non-zero before registration, so check output instead)
 echo "Waiting for warp-svc..."
 elapsed=0
-until warp-cli status 2>/dev/null; do
+until warp-cli status 2>&1 | grep -qE "Status|Registration"; do
   sleep 1
   elapsed=$((elapsed + 1))
   if [ "$elapsed" -ge "$WARP_TIMEOUT" ]; then
