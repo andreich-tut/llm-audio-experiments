@@ -1,0 +1,32 @@
+# Environment / secrets
+.env
+service-account-key.json
+*-credentials.json
+*-key.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+
+# Temp voice files
+*.ogg
+*.wav
+*.mp3
+
+# IDE
+.vscode/
+.idea/
+
+# Whisper model cache
+models/
+~/.cache/huggingface/
+
+# Logs and tests
+logs/
+tests/
+test/
+www.youtube.com_cookies.txt
+.claude/
