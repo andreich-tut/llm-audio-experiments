@@ -3,6 +3,10 @@ set -e
 
 WARP_TIMEOUT=30
 
+# Start D-Bus (required by warp-svc)
+mkdir -p /run/dbus
+dbus-daemon --system --nofork &
+
 # Start Warp daemon
 warp-svc &
 WARP_PID=$!
