@@ -24,46 +24,30 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen3-235b-a22b:free")
 
-SYSTEM_PROMPT = os.getenv(
-    "SYSTEM_PROMPT",
-    "Ты — полезный AI-ассистент. Отвечай кратко и по делу. Язык ответа — русский, если пользователь не просит иначе.",
-)
+_PROJECT_DIR = Path(__file__).parent
+
+
+def _read_prompt(path: str) -> str:
+    """Read a prompt from a .md file. Relative paths resolved from project root."""
+    p = Path(path)
+    if not p.is_absolute():
+        p = _PROJECT_DIR / p
+    if not p.exists():
+        raise FileNotFoundError(f"Prompt file not found: {p}")
+    return p.read_text(encoding="utf-8").strip()
+
+
+SYSTEM_PROMPT = _read_prompt(os.getenv("SYSTEM_PROMPT", "prompts/system.md"))
 
 SUMMARY_PROMPTS = {
-    "brief": (
-        "Ты — ассистент для создания кратких саммари. "
-        "Создай краткое резюме текста в 3-5 предложений. "
-        "Выдели только самое важное. Язык ответа — русский."
-    ),
-    "detailed": (
-        "Ты — ассистент для создания подробных саммари. "
-        "Создай подробное структурированное резюме текста. "
-        "Используй подзаголовки и списки для организации информации. "
-        "Охвати все ключевые темы и аргументы. Язык ответа — русский."
-    ),
-    "keypoints": (
-        "Ты — ассистент для извлечения ключевых тезисов. "
-        "Извлеки из текста все ключевые тезисы и факты. "
-        "Оформи как нумерованный список. Каждый пункт — одно утверждение или факт. "
-        "Язык ответа — русский."
-    ),
+    "brief": _read_prompt("prompts/summary_brief.md"),
+    "detailed": _read_prompt("prompts/summary_detailed.md"),
+    "keypoints": _read_prompt("prompts/summary_keypoints.md"),
 }
 
 MAX_SUMMARY_TEXT = 40000  # truncate transcript for summarization
 
-NOTE_PROMPT = (
-    "Ты — ассистент для создания структурированных заметок в формате Obsidian Markdown.\n"
-    "Пользователь надиктовал голосовое сообщение. Текст распознан автоматически и может содержать речевые артефакты.\n"
-    "Твоя задача:\n"
-    "1. Придумай краткий информативный заголовок заметки.\n"
-    "2. Предложи 2-5 тематических тегов на русском языке (без #).\n"
-    "3. Оформи содержание: убери речевые артефакты (э, ну, вот, повторы), структурируй текст, используй списки или абзацы где уместно.\n\n"
-    "Строго следуй формату ответа — начни с TITLE:, затем TAGS:, затем пустая строка и текст:\n"
-    "TITLE: <заголовок>\n"
-    "TAGS: <тег1, тег2, тег3>\n\n"
-    "<текст заметки>\n\n"
-    "Начни ответ строго с TITLE: — никаких вступлений до этого."
-)
+NOTE_PROMPT = _read_prompt("prompts/note.md")
 
 # ──────────────────────────────────────────────
 # Whisper (STT)

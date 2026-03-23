@@ -28,6 +28,12 @@ services/
   llm.py            — Ollama chat (with history) + one-shot summarization
   youtube.py        — YouTube audio download (yt-dlp), diarization helpers
   gdocs.py          — Google Docs integration (optional)
+prompts/
+  system.md         — Main chat system prompt
+  summary_brief.md  — Brief YouTube summary prompt
+  summary_detailed.md — Detailed YouTube summary prompt
+  summary_keypoints.md — Keypoints extraction prompt
+  note.md           — Obsidian note formatting prompt
 tools/
   audio_splitter.py — FFmpeg-based audio chunking (by size or time)
   transcribe_diarize.py — whisperX + pyannote diarization CLI
@@ -50,7 +56,7 @@ OLLAMA_MODEL=qwen3:8b          # Change model here
 WHISPER_MODEL=medium           # tiny/small/medium/large-v3
 WHISPER_DEVICE=cuda            # cuda or cpu
 ALLOWED_USERS=                 # Comma-separated user IDs (empty = all)
-SYSTEM_PROMPT=<custom prompt>  # Optional override
+SYSTEM_PROMPT=prompts/system.md  # Path to system prompt .md file
 ```
 
 ## Development & Running
