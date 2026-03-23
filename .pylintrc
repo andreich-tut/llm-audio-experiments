@@ -1,0 +1,47 @@
+[MAIN]
+# Use multiple processes to speed up Pylint
+jobs=1
+
+[MESSAGES CONTROL]
+disable=
+    # Style/formatting — not real bugs
+    missing-function-docstring,
+    missing-module-docstring,
+    missing-class-docstring,
+    line-too-long,
+    # Refactor hints — subjective complexity thresholds
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    too-many-return-statements,
+    too-many-arguments,
+    too-many-positional-arguments,
+    duplicate-code,
+    # Intentional patterns in async bot handlers
+    broad-exception-caught,
+    # Conditional/deferred imports (e.g. optional GPU libs, lazy imports)
+    import-outside-toplevel,
+    wrong-import-position,
+    wrong-import-order,
+    # subprocess.run without check= — intentional in CLI tools
+    subprocess-run-check,
+    # False positives from dynamic APIs (Google API client, openai **kwargs)
+    no-member,
+    missing-kwoa,
+    # tools/ scripts importing from sibling scripts by path
+    no-name-in-module,
+    # Unused in some locales/callbacks by design
+    unused-argument,
+    unused-variable,
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+max-locals=30
+max-branches=20
+max-statements=70
+
+[SIMILARITIES]
+# Ignore boilerplate in CLI tools
+min-similarity-lines=10
