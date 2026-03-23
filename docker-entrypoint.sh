@@ -10,7 +10,11 @@ dbus-daemon --system --nofork &
 sleep 1
 
 # Start Warp daemon
-warp-svc &
+if [ "${WARP_DEBUG:-0}" = "1" ]; then
+  warp-svc &
+else
+  warp-svc >/dev/null 2>&1 &
+fi
 WARP_PID=$!
 trap "kill $WARP_PID 2>/dev/null" EXIT
 

@@ -80,6 +80,7 @@ WHISPER_DEVICE=cuda           # cuda or cpu
 
 ALLOWED_USERS=                # comma-separated Telegram user IDs (empty = allow all)
 SYSTEM_PROMPT=                # optional: override the default system prompt
+WARP_DEBUG=0                  # set to 1 to enable Cloudflare WARP verbose logs
 ```
 
 ### LLM providers
