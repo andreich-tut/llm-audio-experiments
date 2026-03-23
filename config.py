@@ -109,6 +109,11 @@ if ALLOWED_USERS.strip():
     }
 
 # ──────────────────────────────────────────────
+# Internationalization
+# ──────────────────────────────────────────────
+DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "ru")  # Supported: 'ru', 'en'
+
+# ──────────────────────────────────────────────
 # Logging
 # ──────────────────────────────────────────────
 LOG_DIR = Path(__file__).parent / "logs"

@@ -9,7 +9,17 @@ import time
 
 import openai
 
-from config import LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, MAX_SUMMARY_TEXT, NOTE_PROMPT, SUMMARY_PROMPTS, SYSTEM_PROMPT
+from config import (
+    DEFAULT_LANGUAGE,
+    LLM_API_KEY,
+    LLM_BASE_URL,
+    LLM_MODEL,
+    MAX_SUMMARY_TEXT,
+    NOTE_PROMPT,
+    SUMMARY_PROMPTS,
+    SYSTEM_PROMPT,
+)
+from core.i18n import t
 from state import add_to_history, get_history
 
 logger = logging.getLogger(__name__)
@@ -33,11 +43,13 @@ async def _chat_with_retry(**kwargs) -> openai.types.chat.ChatCompletion:
         except openai.RateLimitError:
             if delay is None:
                 raise
-            logger.warning("Rate limited (attempt %d/%d), retrying in %ds...", attempt + 1, len(delays), delay)
+            logger.warning(
+                t("llm.rate_limit_warning", DEFAULT_LANGUAGE, attempt=attempt + 1, max=len(delays), delay=delay)
+            )
             await asyncio.sleep(delay)
 
 
-async def ask_ollama(user_id: int, user_message: str) -> str:
+async def ask_ollama(user_id: int, user_message: str, locale: str = DEFAULT_LANGUAGE) -> str:
     """Send message to LLM with conversation history, return full response."""
     add_to_history(user_id, "user", user_message)
 
@@ -55,7 +67,7 @@ async def ask_ollama(user_id: int, user_message: str) -> str:
     elapsed = time.time() - t0
     assistant_text = msg.choices[0].message.content.strip() if msg.choices else ""
     if not assistant_text:
-        assistant_text = "⚠️ Пустой ответ от модели."
+        assistant_text = t("llm.empty_response", locale)
 
     logger.info("LLM response: user_id=%d, %.1fs, response_len=%d", user_id, elapsed, len(assistant_text))
     add_to_history(user_id, "assistant", assistant_text)
@@ -69,7 +81,7 @@ async def summarize_ollama(text: str, detail_level: str, title: str = "") -> str
     system_prompt = SUMMARY_PROMPTS.get(detail_level, SUMMARY_PROMPTS["brief"])
 
     if len(text) > MAX_SUMMARY_TEXT:
-        text = text[:MAX_SUMMARY_TEXT] + "\n\n(текст обрезан)"
+        text = text[:MAX_SUMMARY_TEXT] + t("llm.text_truncated", DEFAULT_LANGUAGE)
 
     user_content = f"Видео: {title}\n\nТекст:\n{text}" if title else text
 
@@ -85,10 +97,10 @@ async def summarize_ollama(text: str, detail_level: str, title: str = "") -> str
     result = msg.choices[0].message.content.strip() if msg.choices else ""
     elapsed = time.time() - t0
     logger.info("Summarize done: detail=%s, %.1fs, result_len=%d", detail_level, elapsed, len(result))
-    return result or "⚠️ Пустой ответ от модели."
+    return result or t("llm.empty_response", DEFAULT_LANGUAGE)
 
 
-async def format_note_ollama(text: str) -> tuple[str, list[str], str]:
+async def format_note_ollama(text: str, locale: str = DEFAULT_LANGUAGE) -> tuple[str, list[str], str]:
     """Format voice transcription as an Obsidian note via LLM.
 
     Returns (title, tags, body).
@@ -110,7 +122,7 @@ async def format_note_ollama(text: str) -> tuple[str, list[str], str]:
     logger.info("Note format done: %.1fs, result_len=%d", elapsed, len(result))
 
     # Parse TITLE:, TAGS:, then body
-    title = "Голосовая заметка"
+    title = t("llm.default_note_title", locale)
     tags: list[str] = []
     body_start = 0
     lines = result.split("\n")

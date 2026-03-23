@@ -6,7 +6,9 @@ import asyncio
 from pathlib import Path
 
 from aiogram import types
+from aiogram.types import CallbackQuery, Message
 
+from core.i18n import get_user_locale
 from state import active_tasks
 
 
@@ -72,3 +74,13 @@ def get_audio_from_msg(msg: types.Message) -> tuple[str, str] | None:
         if any(t in mime for t in ("audio", "video", "ogg", "webm", "mp4", "mp3", "m4a", "aac", "flac", "wav")):
             return msg.document.file_id, audio_suffix(mime, msg.document.file_name)
     return None
+
+
+def get_locale_from_message(message: Message) -> str:
+    """Get locale from a Telegram message."""
+    return get_user_locale(message.from_user.id, message.from_user.language_code)
+
+
+def get_locale_from_callback(callback: CallbackQuery) -> str:
+    """Get locale from a Telegram callback query."""
+    return get_user_locale(callback.from_user.id, callback.from_user.language_code)

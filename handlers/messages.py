@@ -7,7 +7,8 @@ from pathlib import Path
 from aiogram import Bot, F, Router, types
 
 from config import YT_URL_RE, is_allowed, logger
-from core.helpers import audio_suffix, get_audio_from_msg, run_as_cancellable
+from core.helpers import audio_suffix, get_audio_from_msg, get_locale_from_message, run_as_cancellable
+from core.i18n import get_user_locale, t
 from core.pipelines import process_audio, process_text, process_youtube
 from services.youtube import wants_diarize
 from state import active_tasks
@@ -43,11 +44,12 @@ async def handle_video_note(message: types.Message, bot: Bot):
 @router.message(F.document)
 async def handle_document(message: types.Message, bot: Bot):
     """Process document attachments that are audio/video files (webm, mp3, etc.)."""
+    locale = get_user_locale(message.from_user.id)
     if not is_allowed(message.from_user.id):
         return
     mime = message.document.mime_type or ""
     if not any(t in mime for t in ("audio", "video", "ogg", "webm", "mp4", "mp3", "m4a", "aac", "flac", "wav")):
-        await message.answer("⚠️ Поддерживаются только аудио/видео файлы.")
+        await message.answer(t("messages.unsupported_file", locale))
         return
     suffix = audio_suffix(mime, message.document.file_name)
     await run_as_cancellable(message.from_user.id, process_audio(message, bot, message.document.file_id, suffix))
@@ -71,11 +73,16 @@ async def handle_video(message: types.Message, bot: Bot):
 @router.message(F.text)
 async def handle_text(message: types.Message, bot: Bot):
     """Process regular text messages through LLM."""
+    locale = get_locale_from_message(message)
     logger.info("Text: user_id=%d, len=%d", message.from_user.id, len(message.text))
     if not is_allowed(message.from_user.id):
         return
     if message.text.startswith("/"):
-        logger.debug("Ignoring unknown command from user_id=%d: %s", message.from_user.id, message.text.split()[0])
+        logger.debug(
+            t("messages.unknown_command", locale),
+            message.from_user.id,
+            message.text.split()[0],
+        )
         return
 
     # Stop command as plain text
@@ -86,7 +93,7 @@ async def handle_text(message: types.Message, bot: Bot):
             task.cancel()
             logger.info("Task cancelled via text stop: user_id=%d", user_id)
         else:
-            await message.answer("Нет активных задач.")
+            await message.answer(t("messages.no_active_tasks", locale))
         return
 
     # If replying to a message with audio — process that audio

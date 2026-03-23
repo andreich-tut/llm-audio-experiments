@@ -9,6 +9,8 @@ from aiogram.enums import ParseMode
 from aiogram.types import CallbackQuery
 
 from config import logger
+from core.helpers import get_locale_from_callback
+from core.i18n import t
 from core.keyboards import YT_LEVEL_LABELS, YT_LEVEL_MAP, yt_summary_keyboard
 from services.llm import summarize_ollama
 from state import yt_transcripts
@@ -19,6 +21,7 @@ router = Router(name="youtube_callbacks")
 @router.callback_query(F.data.startswith("yt:"))
 async def handle_yt_summary_callback(callback: CallbackQuery):
     """Handle inline button presses for YouTube summary detail levels."""
+    locale = get_locale_from_callback(callback)
     logger.info("YT callback: user_id=%d, data=%s", callback.from_user.id, callback.data)
     await callback.answer()
 
@@ -33,16 +36,16 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
 
     entry = yt_transcripts.get(cache_key)
     if not entry:
-        await callback.message.edit_text("⏰ Расшифровка устарела. Отправьте ссылку заново.")
+        await callback.message.edit_text(t("callbacks.youtube.expired", locale))
         return
 
-    await callback.message.edit_text("🤖 Генерирую саммари...", reply_markup=None)
+    await callback.message.edit_text(t("callbacks.youtube.generate", locale), reply_markup=None)
 
     try:
         summary = await summarize_ollama(entry["transcript"], detail_level, entry["title"])
 
         label = YT_LEVEL_LABELS.get(detail_level, "")
-        header = f"📋 *Саммари ({label}):*\n\n"
+        header = t("pipelines.youtube.summary_format_header", locale, label=label)
         full_msg = header + summary
 
         if len(full_msg) > 4000:
@@ -50,14 +53,14 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
             for i in range(0, len(summary), 4000):
                 await callback.message.answer(summary[i : i + 4000])
             await callback.message.answer(
-                "Выберите формат саммари:",
-                reply_markup=yt_summary_keyboard(cache_key),
+                t("pipelines.youtube.select_format", locale),
+                reply_markup=yt_summary_keyboard(cache_key, locale),
             )
         else:
             await callback.message.edit_text(
                 full_msg,
                 parse_mode=ParseMode.MARKDOWN,
-                reply_markup=yt_summary_keyboard(cache_key),
+                reply_markup=yt_summary_keyboard(cache_key, locale),
             )
 
         entry["ts"] = time.time()  # refresh TTL
@@ -65,6 +68,6 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
     except Exception as e:
         logger.exception("YouTube summary callback error")
         await callback.message.edit_text(
-            f"❌ Ошибка при генерации саммари: {e}",
-            reply_markup=yt_summary_keyboard(cache_key),
+            t("callbacks.youtube.error", locale, error=str(e)),
+            reply_markup=yt_summary_keyboard(cache_key, locale),
         )

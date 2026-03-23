@@ -10,7 +10,8 @@ import tempfile
 import time
 from pathlib import Path
 
-from config import HF_TOKEN, YT_COOKIES_FILE, YT_MAX_DURATION
+from config import DEFAULT_LANGUAGE, HF_TOKEN, YT_COOKIES_FILE, YT_MAX_DURATION
+from core.i18n import t
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +47,11 @@ def _download_yt_sync(url: str, tmp_dir: str) -> tuple[str, str, int]:
     is_live = info.get("is_live", False)
 
     if is_live:
-        raise ValueError("Прямые трансляции не поддерживаются.")
+        raise ValueError(t("youtube.live_not_supported", DEFAULT_LANGUAGE))
     if duration > YT_MAX_DURATION:
-        raise ValueError(f"Видео слишком длинное ({duration // 60} мин). Максимум: {YT_MAX_DURATION // 60} мин.")
+        max_min = YT_MAX_DURATION // 60
+        duration_min = duration // 60
+        raise ValueError(t("youtube.too_long", DEFAULT_LANGUAGE, duration=duration_min, max_duration=max_min))
 
     # 2. Download audio only
     outtmpl = os.path.join(tmp_dir, "yt_audio.%(ext)s")
@@ -71,7 +74,7 @@ def _download_yt_sync(url: str, tmp_dir: str) -> tuple[str, str, int]:
         if f.startswith("yt_audio"):
             return os.path.join(tmp_dir, f), title, duration
 
-    raise ValueError("Не удалось загрузить аудио.")
+    raise ValueError(t("youtube.download_failed", DEFAULT_LANGUAGE))
 
 
 async def download_yt_audio(url: str) -> tuple[str, str, int]:

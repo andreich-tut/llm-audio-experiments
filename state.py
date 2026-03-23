@@ -5,7 +5,7 @@ In-memory state: conversation history, user modes, YouTube transcript cache.
 import asyncio
 import time
 
-from config import MAX_HISTORY, YT_CACHE_TTL
+from config import DEFAULT_LANGUAGE, MAX_HISTORY, YT_CACHE_TTL
 
 # Per-user conversation history
 conversations: dict[int, list[dict]] = {}
@@ -15,6 +15,9 @@ user_modes: dict[int, str] = {}
 
 # Per-user Google Docs saving toggle (opt-in, default off)
 user_gdocs: dict[int, bool] = {}
+
+# Per-user language preference (default from config)
+user_languages: dict[int, str] = {}
 
 # YouTube transcript cache for inline button re-summarization
 # Key: 8-char hex ID, Value: {"transcript": str, "title": str, "ts": float}
@@ -40,6 +43,16 @@ def add_to_history(user_id: int, role: str, content: str):
 
 def clear_history(user_id: int):
     conversations[user_id] = []
+
+
+def get_language(user_id: int) -> str:
+    """Get user's language preference, default to config value."""
+    return user_languages.get(user_id, DEFAULT_LANGUAGE)
+
+
+def set_language(user_id: int, lang: str):
+    """Set user's language preference."""
+    user_languages[user_id] = lang
 
 
 def get_mode(user_id: int) -> str:

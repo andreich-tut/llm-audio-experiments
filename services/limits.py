@@ -4,7 +4,8 @@ API limits checker for free-tier services: OpenRouter (LLM) and Groq (STT).
 
 import httpx
 
-from config import GROQ_API_KEY, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, WHISPER_BACKEND
+from config import DEFAULT_LANGUAGE, GROQ_API_KEY, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, WHISPER_BACKEND
+from core.i18n import t
 
 
 async def check_openrouter() -> dict | None:
@@ -42,30 +43,37 @@ async def check_groq() -> dict | None:
         }
 
 
-def format_limits_message(or_data: dict | None, groq_data: dict | None) -> str:
-    parts = ["📊 *Лимиты API*"]
+def format_limits_message(or_data: dict | None, groq_data: dict | None, locale: str = DEFAULT_LANGUAGE) -> str:
+    parts = [t("limits.header", locale)]
 
     # OpenRouter section
     if or_data is None:
-        parts.append("\n🤖 *LLM*: не OpenRouter (лимиты недоступны)")
+        parts.append(t("limits.llm_not_openrouter", locale))
     else:
         usage = or_data.get("usage", 0) or 0
         limit = or_data.get("limit")
         is_free = or_data.get("is_free_tier", False)
         rate = or_data.get("rate_limit") or {}
-        tier = "Free" if is_free else "Paid"
+        tier = t("limits.free_tier", locale) if is_free else t("limits.paid_tier", locale)
 
-        limit_str = f"${limit:.4f}" if limit is not None else "без лимита"
+        limit_str = f"${limit:.4f}" if limit is not None else t("limits.unlimited", locale)
         parts.append(
-            f"\n🤖 *OpenRouter (LLM)*\nМодель: `{LLM_MODEL}`\nТариф: {tier}\nПотрачено: ${usage:.4f} / {limit_str}"
+            t(
+                "limits.llm_openrouter",
+                locale,
+                model=LLM_MODEL,
+                tier=tier,
+                usage=f"{usage:.4f}",
+                limit=limit_str,
+            )
         )
         if rate:
-            parts.append(f"Rate limit: {rate.get('requests')} req/{rate.get('interval')}")
+            parts.append(t("limits.rate_limit", locale, requests=rate.get("requests"), interval=rate.get("interval")))
 
     # Groq section
     if groq_data is None:
         if WHISPER_BACKEND == "groq":
-            parts.append("\n🎙 *Groq (STT)*: ошибка при получении данных")
+            parts.append(t("limits.groq_not_configured", locale))
         # else: Groq not in use, skip silently
     else:
         lim_r = groq_data.get("limit_req", "?")
@@ -75,11 +83,13 @@ def format_limits_message(or_data: dict | None, groq_data: dict | None) -> str:
         rem_t = groq_data.get("remaining_tokens", "?")
         rst_t = groq_data.get("reset_tokens", "")
 
-        active = " (активен)" if WHISPER_BACKEND == "groq" else " (не активен)"
+        active = t("limits.groq_active", locale) if WHISPER_BACKEND == "groq" else t("limits.groq_not_active", locale)
         parts.append(f"\n🎙 *Groq (STT)*{active}")
         if lim_r:
-            parts.append(f"Запросы: {rem_r} / {lim_r} осталось" + (f", сброс через {rst_r}" if rst_r else ""))
+            reset_suffix = t("limits.reset_suffix", locale, time=rst_r) if rst_r else ""
+            parts.append(t("limits.groq_requests", locale, remaining=rem_r, limit=lim_r, reset=reset_suffix))
         if lim_t:
-            parts.append(f"Токены: {rem_t} / {lim_t} осталось" + (f", сброс через {rst_t}" if rst_t else ""))
+            reset_suffix = t("limits.reset_suffix", locale, time=rst_t) if rst_t else ""
+            parts.append(t("limits.groq_tokens", locale, remaining=rem_t, limit=lim_t, reset=reset_suffix))
 
     return "\n".join(parts)
