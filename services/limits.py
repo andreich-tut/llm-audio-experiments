@@ -22,10 +22,15 @@ async def check_openrouter() -> dict | None:
 
 
 async def check_groq() -> dict | None:
-    """Fetch Groq rate-limit headers via a lightweight models list call.
+    """Return Groq rate-limit data. Uses cached headers from the last transcription
+    if available; falls back to a /v1/models probe otherwise.
     Returns None if Groq is not configured."""
     if not GROQ_API_KEY:
         return None
+    import state
+
+    if state.groq_limits:
+        return dict(state.groq_limits)
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.get(
             "https://api.groq.com/openai/v1/models",
@@ -76,12 +81,12 @@ def format_limits_message(or_data: dict | None, groq_data: dict | None, locale: 
             parts.append(t("limits.groq_not_configured", locale))
         # else: Groq not in use, skip silently
     else:
-        lim_r = groq_data.get("limit_req", "?")
-        rem_r = groq_data.get("remaining_req", "?")
-        rst_r = groq_data.get("reset_req", "")
-        lim_t = groq_data.get("limit_tokens", "?")
-        rem_t = groq_data.get("remaining_tokens", "?")
-        rst_t = groq_data.get("reset_tokens", "")
+        lim_r = groq_data.get("limit_req") or "?"
+        rem_r = groq_data.get("remaining_req") or "?"
+        rst_r = groq_data.get("reset_req") or ""
+        lim_t = groq_data.get("limit_tokens") or "?"
+        rem_t = groq_data.get("remaining_tokens") or "?"
+        rst_t = groq_data.get("reset_tokens") or ""
 
         active = t("limits.groq_active", locale) if WHISPER_BACKEND == "groq" else t("limits.groq_not_active", locale)
         parts.append(t("limits.groq_header", locale) + active)

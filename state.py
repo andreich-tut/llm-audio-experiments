@@ -26,6 +26,23 @@ yt_transcripts: dict[str, dict] = {}
 # Per-user active processing task (for cancellation via /stop)
 active_tasks: dict[int, asyncio.Task] = {}
 
+# Cached Groq rate-limit headers from the last successful transcription response
+groq_limits: dict[str, str | None] = {}
+
+
+def update_groq_limits(headers) -> None:
+    """Extract and cache x-ratelimit-* headers from a Groq API response."""
+    groq_limits.update(
+        {
+            "limit_req": headers.get("x-ratelimit-limit-requests"),
+            "remaining_req": headers.get("x-ratelimit-remaining-requests"),
+            "reset_req": headers.get("x-ratelimit-reset-requests"),
+            "limit_tokens": headers.get("x-ratelimit-limit-tokens"),
+            "remaining_tokens": headers.get("x-ratelimit-remaining-tokens"),
+            "reset_tokens": headers.get("x-ratelimit-reset-tokens"),
+        }
+    )
+
 
 def get_history(user_id: int) -> list[dict]:
     if user_id not in conversations:
