@@ -157,6 +157,25 @@ Voice message → download .ogg → STT (local: faster-whisper / cloud: Groq) �
                                          note: LLM → Markdown → Telegram + vault
 ```
 
+### Code structure
+
+Modular design using aiogram 3 Routers:
+
+```
+bot.py                          # Entrypoint: bot init, router assembly
+core/
+  helpers.py                    # Utility functions (audio suffix, markdown escape, etc.)
+  keyboards.py                  # Inline keyboard builders
+  pipelines.py                  # Processing logic (YouTube, audio, text)
+handlers/
+  commands.py                   # /start, /mode, /clear, /model, /savedoc, /stop, /ping, /limits
+  messages.py                   # voice, audio, video, document, text handlers
+  youtube_callbacks.py          # YouTube summary inline button callbacks
+services/                       # Business logic layer (STT, LLM, YouTube, GDocs, Obsidian)
+state.py                        # In-memory state (history, modes, cache)
+config.py                       # Environment loading, constants, logging
+```
+
 ---
 
 ## CLI tools ([tools/](tools/))
