@@ -14,10 +14,10 @@ warp-svc &
 WARP_PID=$!
 trap "kill $WARP_PID 2>/dev/null" EXIT
 
-# Wait for warp-svc to be ready
+# Wait for warp-svc socket to appear
 echo "Waiting for warp-svc..."
 elapsed=0
-until warp-cli --accept-tos status 2>&1 | grep -qv "daemon is not running"; do
+until [ -S /run/cloudflare-warp/warp_service ]; do
   sleep 1
   elapsed=$((elapsed + 1))
   if [ "$elapsed" -ge "$WARP_TIMEOUT" ]; then
@@ -25,6 +25,8 @@ until warp-cli --accept-tos status 2>&1 | grep -qv "daemon is not running"; do
     exit 1
   fi
 done
+# Give warp-svc a moment to finish initialization after socket creation
+sleep 1
 
 # Register if not already registered
 if ! warp-cli --accept-tos registration show 2>/dev/null | grep -q "Account"; then
