@@ -262,9 +262,9 @@ async def cmd_limits(message: types.Message):
         text = format_limits_message(or_data, groq_data, locale)
         errors = []
         if or_error:
-            errors.append(f"OpenRouter: {or_error}")
+            errors.append(t("commands.limits.openrouter_error", locale, error=or_error))
         if groq_error:
-            errors.append(f"Groq: {groq_error}")
+            errors.append(t("commands.limits.groq_error", locale, error=groq_error))
         if errors:
             text += t("commands.limits.errors_header", locale) + "\n".join(errors)
 

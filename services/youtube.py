@@ -23,7 +23,7 @@ def _yt_cookie_opts() -> dict:
     return {}
 
 
-def _download_yt_sync(url: str, tmp_dir: str) -> tuple[str, str, int]:
+def _download_yt_sync(url: str, tmp_dir: str, locale: str = DEFAULT_LANGUAGE) -> tuple[str, str, int]:
     """
     Download audio from YouTube (runs in executor thread).
     Returns (file_path, title, duration_seconds).
@@ -47,11 +47,11 @@ def _download_yt_sync(url: str, tmp_dir: str) -> tuple[str, str, int]:
     is_live = info.get("is_live", False)
 
     if is_live:
-        raise ValueError(t("youtube.live_not_supported", DEFAULT_LANGUAGE))
+        raise ValueError(t("youtube.live_not_supported", locale))
     if duration > YT_MAX_DURATION:
         max_min = YT_MAX_DURATION // 60
         duration_min = duration // 60
-        raise ValueError(t("youtube.too_long", DEFAULT_LANGUAGE, duration=duration_min, max_duration=max_min))
+        raise ValueError(t("youtube.too_long", locale, duration=duration_min, max_duration=max_min))
 
     # 2. Download audio only
     outtmpl = os.path.join(tmp_dir, "yt_audio.%(ext)s")
@@ -74,16 +74,16 @@ def _download_yt_sync(url: str, tmp_dir: str) -> tuple[str, str, int]:
         if f.startswith("yt_audio"):
             return os.path.join(tmp_dir, f), title, duration
 
-    raise ValueError(t("youtube.download_failed", DEFAULT_LANGUAGE))
+    raise ValueError(t("youtube.download_failed", locale))
 
 
-async def download_yt_audio(url: str) -> tuple[str, str, int]:
+async def download_yt_audio(url: str, locale: str = DEFAULT_LANGUAGE) -> tuple[str, str, int]:
     """Async wrapper: download YouTube audio. Returns (file_path, title, duration)."""
     loop = asyncio.get_event_loop()
     tmp_dir = tempfile.mkdtemp()
     t0 = time.time()
     try:
-        result = await loop.run_in_executor(None, _download_yt_sync, url, tmp_dir)
+        result = await loop.run_in_executor(None, _download_yt_sync, url, tmp_dir, locale)
         logger.info("YT download: %.1fs, title=%s, duration=%ds", time.time() - t0, result[1][:60], result[2])
         return result
     except Exception as e:

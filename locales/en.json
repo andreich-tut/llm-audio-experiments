@@ -50,7 +50,9 @@
     "limits": {
       "checking": "🔍 Checking limits...",
       "error": "❌ Error: {error}",
-      "errors_header": "\n\n⚠️ Errors:\n"
+      "errors_header": "\n\n⚠️ Errors:\n",
+      "openrouter_error": "OpenRouter: {error}",
+      "groq_error": "Groq: {error}"
     }
   },
   "keyboards": {

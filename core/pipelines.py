@@ -38,7 +38,7 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
 
     try:
         # 1. Download audio
-        audio_path, title, duration = await download_yt_audio(url)
+        audio_path, title, duration = await download_yt_audio(url, locale)
         duration_min = duration // 60
         await processing_msg.edit_text(t("pipelines.youtube.transcribing", locale, title=title, duration=duration_min))
 
@@ -80,7 +80,7 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
 
         # 6. Generate brief summary
         await processing_msg.edit_text(t("pipelines.youtube.generating_summary", locale))
-        summary = await summarize_ollama(transcript_text, "brief", title)
+        summary = await summarize_ollama(transcript_text, "brief", title, locale)
 
         header = t("pipelines.youtube.summary_header", locale)
         full_msg = header + summary

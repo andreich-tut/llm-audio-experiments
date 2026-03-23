@@ -74,14 +74,14 @@ async def ask_ollama(user_id: int, user_message: str, locale: str = DEFAULT_LANG
     return assistant_text
 
 
-async def summarize_ollama(text: str, detail_level: str, title: str = "") -> str:
+async def summarize_ollama(text: str, detail_level: str, title: str = "", locale: str = DEFAULT_LANGUAGE) -> str:
     """One-shot summarization via LLM. No conversation history."""
     logger.info("Summarize request: detail=%s, title=%s, text_len=%d", detail_level, title[:60], len(text))
     t0 = time.time()
     system_prompt = SUMMARY_PROMPTS.get(detail_level, SUMMARY_PROMPTS["brief"])
 
     if len(text) > MAX_SUMMARY_TEXT:
-        text = text[:MAX_SUMMARY_TEXT] + t("llm.text_truncated", DEFAULT_LANGUAGE)
+        text = text[:MAX_SUMMARY_TEXT] + t("llm.text_truncated", locale)
 
     user_content = f"Видео: {title}\n\nТекст:\n{text}" if title else text
 
@@ -97,7 +97,7 @@ async def summarize_ollama(text: str, detail_level: str, title: str = "") -> str
     result = msg.choices[0].message.content.strip() if msg.choices else ""
     elapsed = time.time() - t0
     logger.info("Summarize done: detail=%s, %.1fs, result_len=%d", detail_level, elapsed, len(result))
-    return result or t("llm.empty_response", DEFAULT_LANGUAGE)
+    return result or t("llm.empty_response", locale)
 
 
 async def format_note_ollama(text: str, locale: str = DEFAULT_LANGUAGE) -> tuple[str, list[str], str]:

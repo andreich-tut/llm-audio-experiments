@@ -42,7 +42,7 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
     await callback.message.edit_text(t("callbacks.youtube.generate", locale), reply_markup=None)
 
     try:
-        summary = await summarize_ollama(entry["transcript"], detail_level, entry["title"])
+        summary = await summarize_ollama(entry["transcript"], detail_level, entry["title"], locale)
 
         label = YT_LEVEL_LABELS.get(detail_level, "")
         header = t("pipelines.youtube.summary_format_header", locale, label=label)
