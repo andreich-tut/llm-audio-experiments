@@ -35,17 +35,17 @@ if ! warp-cli --accept-tos registration show 2>/dev/null | grep -q "Account"; th
 fi
 
 echo "Setting Warp mode and connecting..."
-warp-cli mode warp
-warp-cli connect
+warp-cli --accept-tos mode warp
+warp-cli --accept-tos connect
 
 echo "Waiting for Warp to connect..."
 elapsed=0
-until warp-cli status 2>/dev/null | grep -q "Connected"; do
+until warp-cli --accept-tos status 2>/dev/null | grep -q "Connected"; do
   sleep 1
   elapsed=$((elapsed + 1))
   if [ "$elapsed" -ge "$WARP_TIMEOUT" ]; then
     echo "ERROR: Warp failed to connect after ${WARP_TIMEOUT}s"
-    warp-cli status || true
+    warp-cli --accept-tos status || true
     exit 1
   fi
 done
