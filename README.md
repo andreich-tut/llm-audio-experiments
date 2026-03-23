@@ -35,6 +35,15 @@ cp .env.example .env
 python bot.py
 ```
 
+## Development
+
+After cloning, install pre-commit hooks (runs ruff lint, ruff format, and auto-bumps patch version on each commit):
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
 ## Bot commands
 
 | Command    | Description                                            |
