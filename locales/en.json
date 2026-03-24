@@ -248,6 +248,19 @@
       "limit_reached": "🚫 You've used all {limit} free requests.\n\nSet up your own API key via /settings to continue.",
       "last_use": "⚠️ This is your last free request. Set up your own API key via /settings.",
       "uses_remaining": "ℹ️ {remaining}/{limit} free requests remaining. Own API key → /settings."
+    },
+    "oauth_login_btn": "🔑 Login with Yandex",
+    "oauth": {
+      "not_configured": "❌ OAuth not configured.",
+      "login_instruction_auto": "Click the button below to login with Yandex Passport. After authorization, you will be automatically redirected back to the bot.",
+      "login_button": "🔐 Login with Yandex",
+      "no_code": "❌ Authorization code not found.",
+      "invalid_state": "❌ Invalid state parameter. Try again.",
+      "exchanging": "⏳ Exchanging code for token...",
+      "exchange_failed": "❌ Failed to get token. Try again.",
+      "success_auto": "✅ Logged in! Yandex: {login}",
+      "go_to_settings": "Go to /settings to manage your Yandex.Disk settings",
+      "login_failed": "❌ Failed to get Yandex login."
     }
   }
 }

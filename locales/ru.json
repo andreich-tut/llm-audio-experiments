@@ -77,6 +77,11 @@
       "label_path": "Path",
       "label_vault_path": "Vault Path",
       "label_inbox_folder": "Inbox Folder",
+      "free_tier": {
+        "limit_reached": "🚫 Вы использовали все {limit} бесплатных запроса.\n\nНастройте свой API ключ через /settings для продолжения.",
+        "last_use": "⚠️ Это ваш последний бесплатный запрос. Настройте свой API ключ через /settings.",
+        "uses_remaining": "ℹ️ Осталось бесплатных запросов: {remaining}/{limit}. Свой API ключ → /settings."
+      },
       "oauth_login_btn": "🔑 Войти через Яндекс",
       "oauth": {
         "not_configured": "❌ OAuth не настроен.",
@@ -248,6 +253,19 @@
       "limit_reached": "🚫 Вы использовали все {limit} бесплатных запроса.\n\nНастройте свой API ключ через /settings для продолжения.",
       "last_use": "⚠️ Это ваш последний бесплатный запрос. Настройте свой API ключ через /settings.",
       "uses_remaining": "ℹ️ Осталось бесплатных запросов: {remaining}/{limit}. Свой API ключ → /settings."
+    },
+    "oauth_login_btn": "🔑 Войти через Яндекс",
+    "oauth": {
+      "not_configured": "❌ OAuth не настроен.",
+      "login_instruction_auto": "Нажмите кнопку ниже для входа через Яндекс.Паспорт. После авторизации вы автоматически вернётесь в бот.",
+      "login_button": "🔐 Войти через Яндекс",
+      "no_code": "❌ Код авторизации не найден.",
+      "invalid_state": "❌ Неверный параметр state. Попробуйте ещё раз.",
+      "exchanging": "⏳ Обмениваю код на токен...",
+      "exchange_failed": "❌ Не удалось получить токен. Попробуйте ещё раз.",
+      "success_auto": "✅ Вход выполнен! Яндекс: {login}",
+      "go_to_settings": "Перейдите в /settings для управления настройками Yandex.Disk",
+      "login_failed": "❌ Не удалось получить логин Яндекса."
     }
   }
 }
