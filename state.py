@@ -38,6 +38,19 @@ def set_user_setting(user_id: int, key: str, value: str) -> None:
     save_user_settings()
 
 
+def set_user_setting_json(user_id: int, key: str, value: dict) -> None:
+    """Store a JSON-serializable dict (e.g., OAuth token)."""
+    if user_id not in user_settings:
+        user_settings[user_id] = {}
+    user_settings[user_id][key] = value
+    save_user_settings()
+
+
+def get_user_setting_json(user_id: int, key: str, default=None):
+    """Retrieve a JSON-serializable dict (e.g., OAuth token)."""
+    return user_settings.get(user_id, {}).get(key, default)
+
+
 def clear_user_setting(user_id: int, key: str) -> None:
     if user_id in user_settings and key in user_settings[user_id]:
         del user_settings[user_id][key]

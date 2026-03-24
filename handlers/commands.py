@@ -35,12 +35,77 @@ from state import (
     get_language,
     get_mode,
     set_language,
+    set_user_setting_json,
     user_gdocs,
     user_modes,
 )
 from version import __version__
 
 router = Router(name="commands")
+
+
+@router.message(CommandStart(deep_link="oauth_*"))
+async def cmd_start_oauth(message: types.Message):
+    """Handle OAuth callback from Yandex via Telegram deep link."""
+    locale = get_locale_from_message(message)
+    logger.info("OAuth callback from user_id=%d", message.from_user.id)
+
+    # Parse deep link from CommandStart filter
+    # The deep_link variable is extracted by the filter
+    # Get the deep link parameter from the message
+    deep_link = message.text.split()[-1] if " " in message.text else ""
+
+    # Handle both "/start oauth_..." and just "oauth_..." formats
+    if deep_link.startswith("/start"):
+        deep_link = deep_link[6:].strip()
+    if deep_link.startswith("oauth_"):
+        deep_link = deep_link[6:]
+
+    parts = deep_link.split("_")
+    if len(parts) < 2:
+        await message.answer(t("settings.oauth.no_code", locale))
+        return
+
+    # Reconstruct code (may contain underscores) and state
+    state_param = parts[-1]
+    code = "_".join(parts[:-1])
+
+    if not code or not state_param:
+        await message.answer(t("settings.oauth.no_code", locale))
+        return
+
+    await message.answer(t("settings.oauth.exchanging", locale))
+
+    # Exchange code for token
+    from aiogram.methods import GetMe
+
+    from services.yandex_oauth import exchange_code, get_user_login
+
+    # Get bot username for redirect URI
+    bot_info = await message.bot(GetMe())
+    bot_username = bot_info.username
+
+    token = await exchange_code(code, bot_username)
+
+    if not token:
+        await message.answer(t("settings.oauth.exchange_failed", locale))
+        return
+
+    # Get user login
+    login = await get_user_login(token.access_token)
+
+    if login:
+        token_dict = token.to_dict()
+        token_dict["login"] = login
+        set_user_setting_json(message.from_user.id, "yandex_oauth_token", token_dict)
+        logger.info("OAuth login successful: user_id=%d, yandex_login=%s", message.from_user.id, login)
+
+        # Send success message with link to settings
+        await message.answer(
+            t("settings.oauth.success_auto", locale, login=login) + "\n\n" + t("settings.oauth.go_to_settings", locale),
+        )
+    else:
+        await message.answer(t("settings.oauth.login_failed", locale))
 
 
 @router.message(CommandStart())

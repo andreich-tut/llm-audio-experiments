@@ -76,6 +76,12 @@ YANDEX_DISK_LOGIN = os.getenv("YANDEX_DISK_LOGIN", "")
 YANDEX_DISK_PASSWORD = os.getenv("YANDEX_DISK_PASSWORD", "")
 YANDEX_DISK_PATH = os.getenv("YANDEX_DISK_PATH", "ObsidianVault")
 
+# Yandex OAuth (optional — alternative to login/password)
+# Create OAuth app: https://oauth.yandex.ru/client/new
+# Required scope: login:info, yandexdisk:write
+YANDEX_OAUTH_CLIENT_ID = os.getenv("YANDEX_OAUTH_CLIENT_ID", "")
+YANDEX_OAUTH_CLIENT_SECRET = os.getenv("YANDEX_OAUTH_CLIENT_SECRET", "")
+
 # ──────────────────────────────────────────────
 # YouTube
 # ──────────────────────────────────────────────

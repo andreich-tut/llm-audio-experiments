@@ -55,7 +55,8 @@
       "Bash(venv/bin/pre-commit install:*)",
       "Bash(ls /home/ilya/dev/ai/tg-audio-describer-bot/venv/bin/python*)",
       "Bash(venv/bin/python -m pip install pre-commit -q)",
-      "Bash(python -c \"import bot; print\\(''''bot.py OK''''\\)\")"
+      "Bash(python -c \"import bot; print\\(''''bot.py OK''''\\)\")",
+      "Bash(python3 -c \"import cairosvg; print\\(''cairosvg available''\\)\")"
     ],
     "additionalDirectories": [
       "/home/ilya/.claude/skills"

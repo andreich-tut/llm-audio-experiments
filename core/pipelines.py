@@ -211,10 +211,16 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
             filename = f"{date_str}-{safe_title.replace(' ', '-')}.md"
 
             vault_saved = False
+            disk_url = None
             if is_obsidian_enabled(user_id):
                 try:
-                    await save_note(filename, note_md, user_id=user_id)
+                    location, disk_url = await save_note(filename, note_md, user_id=user_id)
                     vault_saved = True
+                    # Add disk URL to the note if saved via OAuth
+                    if disk_url:
+                        note_md = f"{note_md}\n\n🔗 [View on Yandex.Disk]({disk_url})"
+                        # Re-save with updated content
+                        await save_note(filename, note_md, user_id=user_id)
                 except Exception as e:
                     logger.error("Failed to save note to Obsidian vault: %s", e)
 
@@ -222,6 +228,8 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
 
             tag_line = " ".join(f"#{tag}" for tag in all_tags)
             vault_line = t("pipelines.audio.vault_saved", locale) if vault_saved else ""
+            if disk_url:
+                vault_line = t("pipelines.audio.vault_saved_with_url", locale, disk_url=disk_url)
             caption = t("pipelines.audio.note_caption", locale, title=title, tags=tag_line, vault_line=vault_line)
             await processing_msg.delete()
             await message.answer_document(doc, caption=caption)

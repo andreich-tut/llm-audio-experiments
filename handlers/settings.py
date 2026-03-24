@@ -16,12 +16,18 @@ from config import (
     LLM_MODEL,
     OBSIDIAN_INBOX_FOLDER,
     YANDEX_DISK_PATH,
+    YANDEX_OAUTH_CLIENT_ID,
     is_allowed,
     logger,
 )
 from core.helpers import get_locale_from_callback, get_locale_from_message
 from core.i18n import t
-from state import clear_user_settings_section, get_user_setting, set_user_setting
+from state import (
+    clear_user_settings_section,
+    get_user_setting,
+    get_user_setting_json,
+    set_user_setting,
+)
 
 router = Router(name="settings")
 
@@ -99,23 +105,29 @@ def _llm_kb(locale: str) -> InlineKeyboardMarkup:
 
 
 def _yadisk_kb(locale: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text=t("settings.set_login_btn", locale), callback_data="settings:set:yadisk_login"
-                ),
-                InlineKeyboardButton(
-                    text=t("settings.set_password_btn", locale), callback_data="settings:set:yadisk_password"
-                ),
-            ],
-            [
-                InlineKeyboardButton(text=t("settings.set_path_btn", locale), callback_data="settings:set:yadisk_path"),
-                InlineKeyboardButton(text=t("settings.clear_btn", locale), callback_data="settings:reset:yadisk"),
-            ],
-            [InlineKeyboardButton(text=t("settings.back_btn", locale), callback_data="settings:back")],
-        ]
-    )
+    """Yandex.Disk settings keyboard with OAuth login option."""
+    buttons = [
+        [
+            InlineKeyboardButton(text=t("settings.set_login_btn", locale), callback_data="settings:set:yadisk_login"),
+            InlineKeyboardButton(
+                text=t("settings.set_password_btn", locale), callback_data="settings:set:yadisk_password"
+            ),
+        ],
+        [
+            InlineKeyboardButton(text=t("settings.set_path_btn", locale), callback_data="settings:set:yadisk_path"),
+        ],
+    ]
+
+    # Add OAuth login button if OAuth is configured
+    if YANDEX_OAUTH_CLIENT_ID:
+        buttons.append(
+            [InlineKeyboardButton(text=t("settings.oauth_login_btn", locale), callback_data="settings:oauth:login")]
+        )
+
+    buttons.append([InlineKeyboardButton(text=t("settings.clear_btn", locale), callback_data="settings:reset:yadisk")])
+    buttons.append([InlineKeyboardButton(text=t("settings.back_btn", locale), callback_data="settings:back")])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def _obsidian_kb(locale: str) -> InlineKeyboardMarkup:
@@ -157,11 +169,21 @@ def _llm_text(user_id: int, locale: str) -> str:
 
 
 def _yadisk_text(user_id: int, locale: str) -> str:
-    login = get_user_setting(user_id, "yadisk_login") or t("settings.not_set", locale)
+    login = get_user_setting(user_id, "yadisk_login")
     password = get_user_setting(user_id, "yadisk_password")
+    oauth_token = get_user_setting_json(user_id, "yandex_oauth_token")
+
+    # Show OAuth login if available
+    if oauth_token and oauth_token.get("access_token"):
+        oauth_login = oauth_token.get("login", "Yandex User")
+        login_display = f"{oauth_login} (OAuth)"
+    else:
+        login_display = login or t("settings.not_set", locale)
+
     password_display = _mask(password) if password else t("settings.not_set", locale)
     path = _val(user_id, "yadisk_path", YANDEX_DISK_PATH, locale)
-    return f"{t('settings.yadisk_title', locale)}\n\nLogin: {login}\nPassword: {password_display}\nPath: {path}"
+
+    return f"{t('settings.yadisk_title', locale)}\n\nLogin: {login_display}\nPassword: {password_display}\nPath: {path}"
 
 
 def _obsidian_text(user_id: int, locale: str) -> str:
