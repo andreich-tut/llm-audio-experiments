@@ -7,7 +7,7 @@ credentials directly in the bot via `/settings` command, without touching `.env`
 
 ## Files to change
 
-### 1. `state.py` — add `user_settings` store
+### 1. `state.py` — add `user_settings` store with persistence
 
 ```python
 user_settings: dict[int, dict] = {}
@@ -15,9 +15,17 @@ user_settings: dict[int, dict] = {}
 def get_user_setting(user_id: int, key: str, default=None)
 def set_user_setting(user_id: int, key: str, value: str) -> None
 def clear_user_setting(user_id: int, key: str) -> None
+def save_user_settings() -> None      # persist to disk
+def load_user_settings() -> None      # load on startup
 ```
 
 Fallback chain: `user_settings[user_id][key]` → `config.CONSTANT`
+
+**Persistence**: Store settings in a JSON file (e.g. `data/user_settings.json`).
+Credentials (API keys, passwords) are re-entered on every restart otherwise.
+Encrypt or at least restrict file permissions (0600). Call `save_user_settings()`
+after every `set_user_setting` / `clear_user_setting`; call `load_user_settings()`
+at bot startup.
 
 ---
 
@@ -35,26 +43,59 @@ Resolve config per-user (falling back to global constants if not set):
 
 ### 3. `services/llm.py` — dynamic client per user
 
-Replace module-level `_client` with factory:
+Replace module-level `_client` with a cached factory:
 
 ```python
-def _get_client(api_key: str, base_url: str) -> openai.AsyncOpenAI
+_clients: dict[tuple[str, str], openai.AsyncOpenAI] = {}
+
+def _get_client(api_key: str, base_url: str) -> openai.AsyncOpenAI:
+    """Return a cached AsyncOpenAI client for the given credentials."""
+    key = (api_key, base_url)
+    if key not in _clients:
+        _clients[key] = openai.AsyncOpenAI(api_key=api_key, base_url=base_url, ...)
+    return _clients[key]
 ```
 
-Update `ask_ollama`, `summarize_ollama`, `format_note_ollama` to accept
-`user_id: int` and resolve effective `api_key` / `base_url` / `model` from
-user settings, falling back to globals.
+Keep the default global client as before (for users without overrides).
+
+Update these functions to accept `user_id: int` and resolve effective
+`api_key` / `base_url` / `model` from user settings, falling back to globals:
+- `ask_ollama`
+- `summarize_ollama`
+- `format_note_ollama`
+- `ping_llm` (currently also uses global `_client` and `LLM_MODEL`)
+- `_chat_with_retry` — accept a `client` parameter instead of using module-level `_client`
 
 ---
 
-### 4. `bot.py` — `/settings` command + FSM
+### 4. `handlers/settings.py` (new) — `/settings` command + FSM
 
-- Add `MemoryStorage` to `Dispatcher`
+- Create a new router for settings handlers
 - Add `SettingsState` FSM group with state `waiting_for_value`
   (stores which key is being set in FSM data)
 - Add `/settings` command handler and inline keyboard callbacks
+- **Delete the user's message** immediately after reading a secret value
+  (`await message.delete()`) to prevent API keys / passwords lingering in chat history
+- Bot replies should mask secrets (e.g. `API Key: sk-...xxxx (set)`, never echo full value)
+
+### 5. `bot.py` — register settings router + FSM storage
+
+- Add `MemoryStorage` to `Dispatcher`
+- Include `settings_router` **before** `messages_router` (catch-all) so FSM
+  state handlers fire first
+- Call `state.load_user_settings()` at startup
+
+### 6. `handlers/messages.py` — add state filter to catch-all
+
+- Add `StateFilter(None)` (or `default_state`) to the catch-all text/voice
+  handlers so they don't intercept messages when the user is in FSM
+  `waiting_for_value` state
+
+### 7. `handlers/commands.py`, `handlers/messages.py`, `handlers/youtube_callbacks.py` — pass `user_id`
+
 - Update all calls to `is_obsidian_enabled()`, `save_note()`, `ask_ollama()`,
   `summarize_ollama()`, `format_note_ollama()` to pass `user_id`
+- These are the actual call sites (not `bot.py` which only wires routers)
 
 ---
 
@@ -90,6 +131,30 @@ Clicking "Set X":
 3. User sends value → saved to `user_settings` → bot returns to submenu
 
 Clicking "Reset" / "Clear": removes user's override, falls back to global default.
+
+---
+
+## Security considerations
+
+1. **Delete secret messages**: After the user sends an API key or password,
+   immediately `await message.delete()` so it doesn't stay in chat history.
+   Never echo the full value back — mask it (e.g. `sk-...xxxx`).
+
+2. **Obsidian local path — directory traversal risk**: If the bot runs on a
+   shared server, letting any allowed user set `OBSIDIAN_VAULT_PATH` enables
+   arbitrary file writes. Mitigations:
+   - Only allow the bot owner (first ALLOWED_USER) to set local paths, OR
+   - Validate that the path is under a configured allowed root, OR
+   - Skip local-path override entirely (only allow Yandex.Disk per-user)
+
+3. **Settings file permissions**: The persisted `data/user_settings.json` contains
+   secrets. Set file permissions to 0600 on creation.
+
+4. **Input validation**: Validate user-provided values before storing:
+   - `base_url`: must be a valid URL (basic URL parse check)
+   - `api_key`: non-empty, reasonable length limit
+   - `model`: non-empty string, no special characters
+   - Optional: "test connection" button to verify LLM credentials work
 
 ---
 
