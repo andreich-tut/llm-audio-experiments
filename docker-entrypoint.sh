@@ -55,4 +55,4 @@ until warp-cli --accept-tos status 2>/dev/null | grep -q "Connected"; do
 done
 echo "Warp connected."
 
-exec python bot.py
+exec python3 bot.py
