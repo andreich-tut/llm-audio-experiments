@@ -25,6 +25,7 @@ YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
 # Required scopes for Yandex.Disk access
 # login:info - Get user login information
 # cloud_api:disk.app_folder - Access to app folder on Yandex.Disk
+# Use space-separated format for multiple scopes
 YANDEX_SCOPES = "login:info cloud_api:disk.app_folder"
 
 
@@ -74,6 +75,9 @@ def get_oauth_url(state: str, bot_username: str) -> str:
     # Format: https://t.me/<bot>?start=oauth_<code>_<state>
     redirect_uri = f"https://t.me/{bot_username}"
 
+    # URL encode the scope parameter (spaces become + or %20)
+    from urllib.parse import urlencode
+
     params = {
         "response_type": "code",
         "client_id": YANDEX_OAUTH_CLIENT_ID,
@@ -81,8 +85,7 @@ def get_oauth_url(state: str, bot_username: str) -> str:
         "scope": YANDEX_SCOPES,
         "state": state,
     }
-    query = "&".join(f"{k}={v}" for k, v in params.items())
-    return f"{YANDEX_AUTH_URL}?{query}"
+    return f"{YANDEX_AUTH_URL}?{urlencode(params)}"
 
 
 async def exchange_code(code: str, bot_username: str) -> Optional[YandexToken]:
