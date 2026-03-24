@@ -24,12 +24,12 @@ from application.state import (
     increment_free_uses,
     yt_transcripts,
 )
-from shared.config import ALLOWED_USER_IDS, HF_TOKEN, logger
-from infrastructure.external_api.youtube import download_yt_audio, transcribe_diarized
 from infrastructure.external_api.groq_client import transcribe
 from infrastructure.external_api.llm_client import ask_ollama, format_note_ollama, summarize_ollama
+from infrastructure.external_api.youtube import download_yt_audio, transcribe_diarized
 from infrastructure.storage.gdocs import is_gdocs_enabled, save_to_gdocs
 from infrastructure.storage.obsidian import is_obsidian_enabled, save_note
+from shared.config import ALLOWED_USER_IDS, HF_TOKEN, logger
 from shared.i18n import t
 from shared.keyboards import stop_keyboard, yt_summary_keyboard
 from shared.utils import escape_md, get_locale_from_message

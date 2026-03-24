@@ -13,13 +13,13 @@ from pathlib import Path
 
 import httpx
 
+from application.state import get_user_setting, get_user_setting_json
+from infrastructure.external_api.yandex_client import refresh_access_token
 from shared.config import (
     OBSIDIAN_INBOX_FOLDER,
     OBSIDIAN_VAULT_PATH,
     YANDEX_DISK_PATH,
 )
-from infrastructure.external_api.yandex_client import refresh_access_token
-from application.state import get_user_setting, get_user_setting_json
 
 logger = logging.getLogger(__name__)
 

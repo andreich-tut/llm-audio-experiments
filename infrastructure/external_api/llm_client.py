@@ -9,6 +9,7 @@ import time
 
 import openai
 
+from application.state import add_to_history, get_history, get_user_setting
 from shared.config import (
     DEFAULT_LANGUAGE,
     LLM_API_KEY,
@@ -20,7 +21,6 @@ from shared.config import (
     SYSTEM_PROMPT,
 )
 from shared.i18n import t
-from application.state import add_to_history, get_history, get_user_setting
 
 logger = logging.getLogger(__name__)
 

@@ -139,5 +139,3 @@ def get_user_locale(user_id: int, telegram_language_code: str | None = None) -> 
 def t(key: str, locale: str = DEFAULT_LANGUAGE, **kwargs: Any) -> str:
     """Shorthand for get_text with default locale."""
     return get_text(locale, key, **kwargs)
-
-

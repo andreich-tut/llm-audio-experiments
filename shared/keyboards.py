@@ -41,7 +41,6 @@ def _get_mode_descriptions(locale: str = DEFAULT_LANGUAGE) -> dict[str, str]:
     }
 
 
-
 def yt_summary_keyboard(cache_key: str, locale: str = DEFAULT_LANGUAGE) -> InlineKeyboardMarkup:
     """Build inline keyboard with summary detail level buttons."""
     labels = get_yt_level_labels(locale)
