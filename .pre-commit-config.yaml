@@ -6,6 +6,12 @@ repos:
         args: [--fix]
       - id: ruff-format
 
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.3.4
+    hooks:
+      - id: pylint
+        args: [--rcfile=.pylintrc]
+
   - repo: local
     hooks:
       - id: bump-version
