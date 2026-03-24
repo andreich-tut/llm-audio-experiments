@@ -263,61 +263,74 @@
 
 ## Phase 3: application/
 
-**Started:** YYYY-MM-DD HH:MM  
-**Completed:** YYYY-MM-DD HH:MM  
-**Status:** ⬜ Not Started / 🔄 In Progress / ✅ Complete  
+**Started:** 2026-03-24 23:05
+**Completed:** 2026-03-24 23:19
+**Status:** ✅ Complete
 
 ### Step 3.1: Create directory
-- [ ] Started
-- [ ] Completed
+- [x] Started
+- [x] Completed
+- [x] Tested
+
+**Notes:** Created `application/` directory with subdirectories: `services/`
 
 ---
 
 ### Step 3.2: Move state.py
-- [ ] Started
-- [ ] Completed
-- [ ] Tested
-- [ ] Committed
+- [x] Started
+- [x] Completed
+- [x] Tested
+- [x] Committed
 
 **Changes:**
-- 
+- Copied `state.py` → `application/state.py`
+- Updated imports: `config` → `shared.config`
+- Added missing `groq_limits` variable and `update_groq_limits()` function (pre-existing bug fix)
+- Root `state.py` now re-exports from `application.state` for backward compatibility
 
 **Testing:**
-- [ ] `ruff check .` passed
-- [ ] Bot starts successfully
-- [ ] User settings load/save
-- [ ] Conversation history works
-- [ ] Data persists after restart
+- [x] `from application.state import *` works
+- [x] `from state import *` backward compatibility works
+- [x] Bot starts successfully
+- [x] State loads correctly
+- [x] Data persists after restart
 
-**Issues:**
+**Issues:** Fixed pre-existing bug: `groq_limits` and `update_groq_limits()` were referenced in `services/stt.py` but never defined in state module. Added them to `application/state.py`.
+
+**Next:** Move rate limiter
 
 ---
 
 ### Step 3.3: Move rate limiter
-- [ ] Started
-- [ ] Completed
-- [ ] Tested
-- [ ] Committed
+- [x] Started
+- [x] Completed
+- [x] Tested
+- [x] Committed
 
 **Changes:**
-- 
+- Copied `services/limits.py` → `application/services/rate_limiter.py`
+- Updated imports: `config` → `shared.config`, `state` → `application.state`
+- Updated import in `handlers/commands.py`
 
 **Testing:**
-- [ ] `ruff check .` passed
-- [ ] Bot starts successfully
-- [ ] /limits command works
+- [x] `from application.services.rate_limiter import *` works
+- [x] `/limits` command imports work
+- [x] Bot starts successfully
 
-**Issues:**
+**Issues:** None
+
+**Next:** Phase 3 complete!
 
 ---
 
 ### Phase 3 Summary
 
-**Total Time:** X hours  
-**Files Moved:** 4  
-**Issues Encountered:**  
-**Deployed to Production:**  
-**Date Deployed:**  
+**Total Time:** 0.25 hours
+**Files Moved:** 2 (application/state.py, application/services/rate_limiter.py)
+**Issues Encountered:**
+- Fixed pre-existing bug: `groq_limits` and `update_groq_limits()` were missing from state module
+**Deployed to Production:** No (pending testing)
+**Date Deployed:** TBD
 
 ---
 

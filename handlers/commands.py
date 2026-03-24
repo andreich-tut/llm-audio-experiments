@@ -8,6 +8,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery
 
+from application.services.rate_limiter import check_groq, check_openrouter, format_limits_message
 from config import (
     GDOCS_DOCUMENT_ID,
     LLM_MODEL,
@@ -17,7 +18,6 @@ from config import (
 )
 from infrastructure.external_api.llm_client import ping_llm
 from infrastructure.storage.gdocs import gdocs_service
-from services.limits import check_groq, check_openrouter, format_limits_message
 from shared.i18n import t
 from shared.keyboards import (
     LANGUAGE_CODES,

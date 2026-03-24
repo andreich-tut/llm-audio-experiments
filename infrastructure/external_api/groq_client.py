@@ -52,7 +52,7 @@ def _transcribe_local(file_path: str) -> tuple[str, str]:
 async def _transcribe_groq(file_path: str) -> str:
     import httpx
 
-    import state
+    from application.state import update_groq_limits
 
     logger.info("Calling Groq Whisper API for %s...", file_path)
     async with httpx.AsyncClient(timeout=120) as client:
@@ -66,7 +66,7 @@ async def _transcribe_groq(file_path: str) -> str:
     if not response.is_success:
         logger.error("Groq API error %d: %s", response.status_code, response.text)
     response.raise_for_status()
-    state.update_groq_limits(response.headers)
+    update_groq_limits(response.headers)
     text = response.json()["text"]
     logger.info("Groq transcription done, text_len=%d", len(text))
     return text
