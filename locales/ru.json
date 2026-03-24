@@ -255,6 +255,12 @@
       "uses_remaining": "ℹ️ Осталось бесплатных запросов: {remaining}/{limit}. Свой API ключ → /settings."
     },
     "oauth_login_btn": "🔑 Войти через Яндекс",
+    "oauth_disconnect_btn": "🔓 Отключить Яндекс",
+    "oauth_only": "❌ Прямой ввод логина/пароля отключён. Используйте Яндекс OAuth для безопасной аутентификации.",
+    "yadisk_connected": "✅ Подключено",
+    "yadisk_not_connected": "❌ Не подключено",
+    "yadisk_login_label": "Логин",
+    "yadisk_path_label": "Путь",
     "oauth": {
       "not_configured": "❌ OAuth не настроен.",
       "login_instruction_auto": "Нажмите кнопку ниже для входа через Яндекс.Паспорт. После авторизации вы автоматически вернётесь в бот.",
@@ -265,7 +271,8 @@
       "exchange_failed": "❌ Не удалось получить токен. Попробуйте ещё раз.",
       "success_auto": "✅ Вход выполнен! Яндекс: {login}",
       "go_to_settings": "Перейдите в /settings для управления настройками Yandex.Disk",
-      "login_failed": "❌ Не удалось получить логин Яндекса."
+      "login_failed": "❌ Не удалось получить логин Яндекса.",
+      "disconnected": "✅ Яндекс OAuth отключён."
     }
   }
 }

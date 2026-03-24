@@ -250,6 +250,12 @@
       "uses_remaining": "ℹ️ {remaining}/{limit} free requests remaining. Own API key → /settings."
     },
     "oauth_login_btn": "🔑 Login with Yandex",
+    "oauth_disconnect_btn": "🔓 Disconnect Yandex",
+    "oauth_only": "❌ Direct login/password input is disabled. Use Yandex OAuth for secure authentication.",
+    "yadisk_connected": "✅ Connected",
+    "yadisk_not_connected": "❌ Not connected",
+    "yadisk_login_label": "Login",
+    "yadisk_path_label": "Path",
     "oauth": {
       "not_configured": "❌ OAuth not configured.",
       "login_instruction_auto": "Click the button below to login with Yandex Passport. After authorization, you will be automatically redirected back to the bot.",
@@ -260,7 +266,8 @@
       "exchange_failed": "❌ Failed to get token. Try again.",
       "success_auto": "✅ Logged in! Yandex: {login}",
       "go_to_settings": "Go to /settings to manage your Yandex.Disk settings",
-      "login_failed": "❌ Failed to get Yandex login."
+      "login_failed": "❌ Failed to get Yandex login.",
+      "disconnected": "✅ Yandex OAuth disconnected."
     }
   }
 }

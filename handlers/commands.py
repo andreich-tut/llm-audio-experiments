@@ -45,7 +45,7 @@ router = Router(name="commands")
 
 
 @router.message(CommandStart(deep_link="oauth_*"))
-async def cmd_start_oauth(message: types.Message):
+async def cmd_start_oauth(message: types.Message, state):
     """Handle OAuth callback from Yandex via Telegram deep link."""
     locale = get_locale_from_message(message)
     logger.info("OAuth callback from user_id=%d", message.from_user.id)
@@ -74,6 +74,18 @@ async def cmd_start_oauth(message: types.Message):
         await message.answer(t("settings.oauth.no_code", locale))
         return
 
+    # Verify OAuth state parameter (CSRF protection)
+    fsm_state_data = await state.get_data()
+    stored_state = fsm_state_data.get("oauth_state")
+
+    if not stored_state or stored_state != state_param:
+        logger.warning(
+            "OAuth state mismatch: user_id=%d, received=%s, stored=%s", message.from_user.id, state_param, stored_state
+        )
+        await message.answer(t("settings.oauth.invalid_state", locale))
+        await state.clear()
+        return
+
     await message.answer(t("settings.oauth.exchanging", locale))
 
     # Exchange code for token
@@ -89,6 +101,7 @@ async def cmd_start_oauth(message: types.Message):
 
     if not token:
         await message.answer(t("settings.oauth.exchange_failed", locale))
+        await state.clear()
         return
 
     # Get user login
@@ -100,12 +113,14 @@ async def cmd_start_oauth(message: types.Message):
         set_user_setting_json(message.from_user.id, "yandex_oauth_token", token_dict)
         logger.info("OAuth login successful: user_id=%d, yandex_login=%s", message.from_user.id, login)
 
-        # Send success message with link to settings
+        # Clear FSM state and send success message with link to settings
+        await state.clear()
         await message.answer(
             t("settings.oauth.success_auto", locale, login=login) + "\n\n" + t("settings.oauth.go_to_settings", locale),
         )
     else:
         await message.answer(t("settings.oauth.login_failed", locale))
+        await state.clear()
 
 
 @router.message(CommandStart())

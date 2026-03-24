@@ -106,27 +106,18 @@ def _llm_kb(locale: str) -> InlineKeyboardMarkup:
 
 
 def _yadisk_kb(locale: str) -> InlineKeyboardMarkup:
-    """Yandex.Disk settings keyboard with OAuth login option."""
+    """Yandex.Disk settings keyboard with OAuth login only (no direct credentials)."""
     buttons = [
         [
-            InlineKeyboardButton(text=t("settings.set_login_btn", locale), callback_data="settings:set:yadisk_login"),
-            InlineKeyboardButton(
-                text=t("settings.set_password_btn", locale), callback_data="settings:set:yadisk_password"
-            ),
+            InlineKeyboardButton(text=t("settings.oauth_login_btn", locale), callback_data="settings:oauth:login"),
         ],
         [
-            InlineKeyboardButton(text=t("settings.set_path_btn", locale), callback_data="settings:set:yadisk_path"),
+            InlineKeyboardButton(
+                text=t("settings.oauth_disconnect_btn", locale), callback_data="settings:oauth:disconnect"
+            ),
         ],
+        [InlineKeyboardButton(text=t("settings.back_btn", locale), callback_data="settings:back")],
     ]
-
-    # Add OAuth login button if OAuth is configured
-    if YANDEX_OAUTH_CLIENT_ID:
-        buttons.append(
-            [InlineKeyboardButton(text=t("settings.oauth_login_btn", locale), callback_data="settings:oauth:login")]
-        )
-
-    buttons.append([InlineKeyboardButton(text=t("settings.clear_btn", locale), callback_data="settings:reset:yadisk")])
-    buttons.append([InlineKeyboardButton(text=t("settings.back_btn", locale), callback_data="settings:back")])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -170,21 +161,21 @@ def _llm_text(user_id: int, locale: str) -> str:
 
 
 def _yadisk_text(user_id: int, locale: str) -> str:
-    login = get_user_setting(user_id, "yadisk_login")
-    password = get_user_setting(user_id, "yadisk_password")
     oauth_token = get_user_setting_json(user_id, "yandex_oauth_token")
 
     # Show OAuth login if available
     if oauth_token and oauth_token.get("access_token"):
         oauth_login = oauth_token.get("login", "Yandex User")
         login_display = f"{oauth_login} (OAuth)"
+        status = (
+            f"{t('settings.yadisk_connected', locale)}\n\n{t('settings.yadisk_login_label', locale)}: {login_display}"
+        )
     else:
-        login_display = login or t("settings.not_set", locale)
+        status = t("settings.yadisk_not_connected", locale)
 
-    password_display = _mask(password) if password else t("settings.not_set", locale)
     path = _val(user_id, "yadisk_path", YANDEX_DISK_PATH, locale)
 
-    return f"{t('settings.yadisk_title', locale)}\n\nLogin: {login_display}\nPassword: {password_display}\nPath: {path}"
+    return f"{t('settings.yadisk_title', locale)}\n\n{status}\n{t('settings.yadisk_path_label', locale)}: {path}"
 
 
 def _obsidian_text(user_id: int, locale: str) -> str:
@@ -252,6 +243,11 @@ async def cb_set_value(callback: CallbackQuery, state: FSMContext):
     # Access control for privileged keys (local paths)
     if key in _PRIVILEGED_KEYS and ALLOWED_USER_IDS and callback.from_user.id not in ALLOWED_USER_IDS:
         await callback.answer(t("settings.access_denied", locale), show_alert=True)
+        return
+
+    # Block direct credential input for Yandex.Disk (OAuth only)
+    if key in ("yadisk_login", "yadisk_password"):
+        await callback.answer(t("settings.oauth_only", locale), show_alert=True)
         return
 
     label_key, submenu = _KEY_META[key]
@@ -327,6 +323,27 @@ async def cb_oauth_login(callback: CallbackQuery, state: FSMContext):
     )
 
 
+@router.callback_query(F.data == "settings:oauth:disconnect")
+async def cb_oauth_disconnect(callback: CallbackQuery):
+    """Disconnect OAuth and remove stored token."""
+    locale = get_locale_from_callback(callback)
+    user_id = callback.from_user.id
+
+    # Remove stored OAuth token
+    from state import set_user_setting_json
+
+    set_user_setting_json(user_id, "yandex_oauth_token", None)
+    logger.info("OAuth disconnected: user_id=%d", user_id)
+
+    await callback.answer(t("settings.oauth.disconnected", locale), show_alert=False)
+
+    # Update the settings message
+    await callback.message.edit_text(
+        _yadisk_text(user_id, locale),
+        reply_markup=_yadisk_kb(locale),
+    )
+
+
 @router.message(StateFilter(SettingsStates.waiting_for_value))
 async def handle_setting_value(message: Message, bot: Bot, state: FSMContext):
     locale = get_locale_from_message(message)
@@ -335,6 +352,21 @@ async def handle_setting_value(message: Message, bot: Bot, state: FSMContext):
     submenu = data.get("submenu", "llm")
     msg_id = data.get("msg_id")
     await state.clear()
+
+    # Block direct credential input for Yandex.Disk (OAuth only)
+    if key in ("yadisk_login", "yadisk_password"):
+        await message.answer(t("settings.oauth_only", locale))
+        # Return to Yandex.Disk settings menu
+        try:
+            await bot.edit_message_text(
+                _yadisk_text(message.from_user.id, locale),
+                chat_id=message.chat.id,
+                message_id=msg_id,
+                reply_markup=_yadisk_kb(locale),
+            )
+        except Exception:
+            pass
+        return
 
     value = (message.text or "").strip()
 
