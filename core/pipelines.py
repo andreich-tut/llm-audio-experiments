@@ -16,14 +16,14 @@ from aiogram.enums import ParseMode
 from aiogram.types import BufferedInputFile
 
 from config import ALLOWED_USER_IDS, HF_TOKEN, logger
-from core.helpers import escape_md, get_locale_from_message
-from core.i18n import t
-from core.keyboards import stop_keyboard, yt_summary_keyboard
 from services.gdocs import is_gdocs_enabled, save_to_gdocs
 from services.llm import ask_ollama, format_note_ollama, summarize_ollama
 from services.obsidian import is_obsidian_enabled, save_note
 from services.stt import transcribe
 from services.youtube import download_yt_audio, transcribe_diarized
+from shared.i18n import t
+from shared.keyboards import stop_keyboard, yt_summary_keyboard
+from shared.utils import escape_md, get_locale_from_message
 from state import (
     FREE_USES_LIMIT,
     can_use_shared_credentials,

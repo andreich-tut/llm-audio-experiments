@@ -15,9 +15,11 @@ from config import (
     is_allowed,
     logger,
 )
-from core.helpers import get_locale_from_callback, get_locale_from_message
-from core.i18n import t
-from core.keyboards import (
+from services.gdocs import gdocs_service
+from services.limits import check_groq, check_openrouter, format_limits_message
+from services.llm import ping_llm
+from shared.i18n import t
+from shared.keyboards import (
     LANGUAGE_CODES,
     MODE_LABELS,
     _get_mode_descriptions,
@@ -25,9 +27,7 @@ from core.keyboards import (
     language_keyboard,
     mode_keyboard,
 )
-from services.gdocs import gdocs_service
-from services.limits import check_groq, check_openrouter, format_limits_message
-from services.llm import ping_llm
+from shared.utils import get_locale_from_callback, get_locale_from_message
 from state import (
     active_tasks,
     clear_history,

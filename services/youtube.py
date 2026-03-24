@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from config import DEFAULT_LANGUAGE, HF_TOKEN, YT_COOKIES_FILE, YT_MAX_DURATION
-from core.i18n import t
+from shared.i18n import t
 
 logger = logging.getLogger(__name__)
 

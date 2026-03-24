@@ -9,10 +9,10 @@ from aiogram.enums import ParseMode
 from aiogram.types import CallbackQuery
 
 from config import logger
-from core.helpers import get_locale_from_callback
-from core.i18n import t
-from core.keyboards import YT_LEVEL_LABELS, YT_LEVEL_MAP, yt_summary_keyboard
 from services.llm import summarize_ollama
+from shared.i18n import t
+from shared.keyboards import YT_LEVEL_LABELS, YT_LEVEL_MAP, yt_summary_keyboard
+from shared.utils import get_locale_from_callback
 from state import yt_transcripts
 
 router = Router(name="youtube_callbacks")

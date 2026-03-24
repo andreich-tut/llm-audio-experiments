@@ -24,7 +24,7 @@ LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen3-235b-a22b:free")
 
-_PROJECT_DIR = Path(__file__).parent
+_PROJECT_DIR = Path(__file__).parent.parent  # shared/ → project root
 
 
 def _read_prompt(path: str) -> str:
@@ -147,9 +147,3 @@ def is_allowed(user_id: int) -> bool:
     if not allowed:
         logger.warning("Access denied for user_id=%d", user_id)
     return allowed
-
-
-# ──────────────────────────────────────────────
-# Backward compatibility: re-export from shared layer
-# ──────────────────────────────────────────────
-from shared.config import *  # noqa: F401,F403,F405,E402

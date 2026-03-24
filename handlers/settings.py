@@ -20,9 +20,9 @@ from config import (
     is_allowed,
     logger,
 )
-from core.helpers import get_locale_from_callback, get_locale_from_message
-from core.i18n import t
 from services.yandex_oauth import get_oauth_url
+from shared.i18n import t
+from shared.utils import get_locale_from_callback, get_locale_from_message
 from state import (
     clear_user_settings_section,
     get_user_setting,

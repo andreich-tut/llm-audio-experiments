@@ -19,7 +19,7 @@ from config import (
     SUMMARY_PROMPTS,
     SYSTEM_PROMPT,
 )
-from core.i18n import t
+from shared.i18n import t
 from state import add_to_history, get_history, get_user_setting
 
 logger = logging.getLogger(__name__)
