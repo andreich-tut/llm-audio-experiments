@@ -8,4 +8,4 @@ On startup, automatically migrates data from legacy data/user_settings.json.
 """
 
 # Backward compatibility: re-export from application layer
-from application.state import *  # noqa: F401, F403
+from application.state import *  # noqa: F401, F403  # pylint: disable=wildcard-import,unused-wildcard-import
