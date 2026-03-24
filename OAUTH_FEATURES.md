@@ -14,8 +14,11 @@ This document describes two new features added to the bot:
 1. **Create OAuth Application in Yandex**
    - Go to https://oauth.yandex.ru/client/new
    - Create a new OAuth application
-   - Set required scopes: `login:info`, `yandexdisk:write`
+   - Set required scopes:
+     - ✅ **Доступ к логину, имени и фамилии, полу** (`login:info`)
+     - ✅ **Доступ к папке приложения на Диске** (`cloud_api:disk.app_folder`)
    - Set redirect URI to: `https://t.me/your_bot_username` (replace with your bot's username)
+   - Platform: **Веб-сервисы** (Web services)
 
 2. **Configure Bot**
    Add to `.env`:

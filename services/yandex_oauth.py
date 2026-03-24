@@ -22,8 +22,10 @@ logger = logging.getLogger(__name__)
 YANDEX_AUTH_URL = "https://oauth.yandex.ru/authorize"
 YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
 
-# Required scopes for Yandex.Disk WebDAV access
-YANDEX_SCOPES = "login:info yandexdisk:write"
+# Required scopes for Yandex.Disk access
+# login:info - Get user login information
+# cloud_api:disk.app_folder - Access to app folder on Yandex.Disk
+YANDEX_SCOPES = "login:info cloud_api:disk.app_folder"
 
 
 @dataclass
