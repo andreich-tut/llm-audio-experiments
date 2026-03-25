@@ -53,6 +53,7 @@ pre-commit install
 Set up symlinks for AI assistant skills (Claude Code, Qwen Code):
 
 ```bash
+mkdir -p .claude .qwen
 ln -s $(pwd)/skills .claude/skills
 ln -s $(pwd)/skills .qwen/skills
 ```

@@ -95,5 +95,10 @@ async def reset_section(
 ) -> dict:
     keys = SECTION_KEYS[section.value]
     deleted = await db.delete_settings_section(user_id, keys)
+
+    # Also disconnect OAuth when resetting Yandex.Disk section
+    if section.value == "yadisk":
+        await db.delete_oauth_token(user_id, "yandex")
+
     logger.info("Section reset: user_id=%d section=%s deleted=%d", user_id, section.value, deleted)
     return {"section": section.value, "cleared": True}
