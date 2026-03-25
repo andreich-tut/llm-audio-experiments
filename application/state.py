@@ -76,13 +76,13 @@ def update_groq_limits(headers: dict) -> None:
     }
 
 
-def can_use_shared_credentials(user_id: int) -> bool:
+async def can_use_shared_credentials(user_id: int) -> bool:
     """Return True if the user may use the bot's global (shared) API keys."""
     if not ALLOWED_USER_IDS:
         return True
     if user_id in ALLOWED_USER_IDS:
         return True
-    if get_user_setting(user_id, "llm_api_key"):
+    if await get_user_setting_async(user_id, "llm_api_key"):
         return True
     return False
 
@@ -98,33 +98,33 @@ def cleanup_yt_cache() -> None:
 # ── Mode / language ────────────────────────────────────────────────────────────
 
 
-def get_mode(user_id: int) -> str:
+async def get_mode(user_id: int) -> str:
     """Get user's current mode."""
     if user_id in user_modes:
         return user_modes[user_id]
-    mode = get_user_setting(user_id, "mode", "chat")
+    mode = await get_user_setting_async(user_id, "mode", "chat")
     user_modes[user_id] = mode
     return mode
 
 
-def set_mode(user_id: int, mode: str) -> None:
+async def set_mode(user_id: int, mode: str) -> None:
     """Set user's current mode."""
-    set_user_setting(user_id, "mode", mode)
+    await set_user_setting_async(user_id, "mode", mode)
     user_modes[user_id] = mode
 
 
-def get_language(user_id: int) -> str:
+async def get_language(user_id: int) -> str:
     """Get user's language preference."""
     if user_id in _user_languages:
         return _user_languages[user_id]
-    lang = get_user_setting(user_id, "language", DEFAULT_LANGUAGE)
+    lang = await get_user_setting_async(user_id, "language", DEFAULT_LANGUAGE)
     _user_languages[user_id] = lang
     return lang
 
 
-def set_language(user_id: int, language: str) -> None:
+async def set_language(user_id: int, language: str) -> None:
     """Set user's language preference."""
-    set_user_setting(user_id, "language", language)
+    await set_user_setting_async(user_id, "language", language)
     _user_languages[user_id] = language
 
 

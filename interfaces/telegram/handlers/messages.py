@@ -11,7 +11,7 @@ from application.pipelines import process_audio, process_text, process_youtube
 from application.state import active_tasks
 from infrastructure.external_api.youtube import wants_diarize
 from shared.config import YT_URL_RE, is_allowed, logger
-from shared.i18n import get_user_locale, t
+from shared.i18n import t
 from shared.utils import audio_suffix, get_audio_from_msg, get_locale_from_message, run_as_cancellable
 
 router = Router(name="messages")
@@ -45,7 +45,7 @@ async def handle_video_note(message: types.Message, bot: Bot):
 @router.message(F.document)
 async def handle_document(message: types.Message, bot: Bot):
     """Process document attachments that are audio/video files (webm, mp3, etc.)."""
-    locale = get_user_locale(message.from_user.id)
+    locale = await get_locale_from_message(message)
     if not is_allowed(message.from_user.id):
         return
     mime = message.document.mime_type or ""
@@ -74,7 +74,7 @@ async def handle_video(message: types.Message, bot: Bot):
 @router.message(F.text, StateFilter(None))
 async def handle_text(message: types.Message, bot: Bot):
     """Process regular text messages through LLM."""
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("Text: user_id=%d, len=%d", message.from_user.id, len(message.text))
     if not is_allowed(message.from_user.id):
         return

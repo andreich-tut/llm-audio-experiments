@@ -16,7 +16,7 @@ from shared.utils import get_locale_from_message
 
 async def process_text(message: types.Message):
     """Send text message to LLM and reply."""
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     user_id = message.from_user.id
     if not await _check_free_tier(message, locale):
         return

@@ -56,7 +56,12 @@
       "Bash(ls /home/ilya/dev/ai/tg-audio-describer-bot/venv/bin/python*)",
       "Bash(venv/bin/python -m pip install pre-commit -q)",
       "Bash(python -c \"import bot; print\\(''''bot.py OK''''\\)\")",
-      "Bash(python3 -c \"import cairosvg; print\\(''cairosvg available''\\)\")"
+      "Bash(python3 -c \"import cairosvg; print\\(''cairosvg available''\\)\")",
+      "Bash(tail -100 logs/*.log)",
+      "Bash(timeout 8 python bot.py)",
+      "Bash(python -c \"from bot import main\")",
+      "Bash(git mv:*)",
+      "Bash(ls docs/*.md)"
     ],
     "additionalDirectories": [
       "/home/ilya/.claude/skills"

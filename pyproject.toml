@@ -1,6 +1,6 @@
 [project]
 name = "tg-voice"
-version = "0.1.74"
+version = "0.1.81"
 
 [tool.ruff]
 line-length = 120

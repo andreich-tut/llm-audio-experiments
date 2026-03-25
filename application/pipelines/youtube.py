@@ -27,7 +27,7 @@ from shared.utils import get_locale_from_message
 
 async def process_youtube(message: types.Message, url: str, diarize: bool):
     """Download YouTube audio, transcribe, send transcript file, summarize with inline buttons."""
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     user_id = message.from_user.id
     logger.info("YouTube: user_id=%d, url=%s, diarize=%s", user_id, url, diarize)
     if not await _check_free_tier(message, locale):

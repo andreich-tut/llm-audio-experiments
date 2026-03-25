@@ -10,19 +10,19 @@ Refactor the bot from a simple layered structure to a clean **layered architectu
 
 ## Progress Tracking
 
-**IMPORTANT:** Every step must be documented in `REFACTOR_PROGRESS.md`
+**IMPORTANT:** Every step must be documented in `refactor-progress.md`
 
 ### Before Starting
 
 ```bash
 # Create progress tracking file
-cp REFACTOR_PROGRESS.md.example REFACTOR_PROGRESS.md
-git add REFACTOR_PROGRESS.md
+cp refactor-progress.md.example refactor-progress.md
+git add refactor-progress.md
 ```
 
 ### After Each Step
 
-**Update `REFACTOR_PROGRESS.md`:**
+**Update `refactor-progress.md`:**
 ```markdown
 ## [Phase 1] Step 1.2: Move i18n
 
@@ -49,16 +49,16 @@ git add REFACTOR_PROGRESS.md
 
 ```bash
 # Update progress file
-vim REFACTOR_PROGRESS.md
+vim refactor-progress.md
 
 # Commit progress with code
-git add REFACTOR_PROGRESS.md
+git add refactor-progress.md
 git commit -m "refactor: Phase 1 Step 1.2 complete - moved i18n"
 ```
 
 ### Progress File Template
 
-Create `REFACTOR_PROGRESS.md.example`:
+Create `refactor-progress.md.example`:
 
 ```markdown
 # Refactoring Progress Tracker
@@ -113,7 +113,7 @@ Create `REFACTOR_PROGRESS.md.example`:
 - ✅ All features functional: voice, YouTube, notes, chat
 - ✅ Can deploy to production: `./update.sh`
 - ✅ Can rollback safely if issues found
-- ✅ Progress documented in `REFACTOR_PROGRESS.md`
+- ✅ Progress documented in `refactor-progress.md`
 
 **No broken states!** If a phase fails, rollback to previous working version.
 

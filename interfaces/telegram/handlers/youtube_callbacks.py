@@ -21,7 +21,7 @@ router = Router(name="youtube_callbacks")
 @router.callback_query(F.data.startswith("yt:"))
 async def handle_yt_summary_callback(callback: CallbackQuery):
     """Handle inline button presses for YouTube summary detail levels."""
-    locale = get_locale_from_callback(callback)
+    locale = await get_locale_from_callback(callback)
     logger.info("YT callback: user_id=%d, data=%s", callback.from_user.id, callback.data)
     await callback.answer()
 

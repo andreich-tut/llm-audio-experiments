@@ -38,7 +38,7 @@ router = Router(name="commands")
 
 @router.message(CommandStart())
 async def cmd_start(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("/start from user_id=%d (@%s)", message.from_user.id, message.from_user.username)
     if not is_allowed(message.from_user.id):
         return
@@ -77,10 +77,10 @@ async def cmd_start(message: types.Message):
 
 @router.message(Command("mode"))
 async def cmd_mode(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     if not is_allowed(message.from_user.id):
         return
-    current = get_mode(message.from_user.id)
+    current = await get_mode(message.from_user.id)
     logger.info("/mode user_id=%d, current=%s", message.from_user.id, current)
     await message.answer(
         t("commands.mode.current_mode", locale, mode=get_mode_labels(locale).get(current, current))
@@ -92,13 +92,13 @@ async def cmd_mode(message: types.Message):
 
 @router.callback_query(F.data.startswith("mode:"))
 async def handle_mode_callback(callback: CallbackQuery):
-    locale = get_locale_from_callback(callback)
+    locale = await get_locale_from_callback(callback)
     new_mode = callback.data.split(":", 1)[1]
     mode_labels = get_mode_labels(locale)
     if new_mode not in mode_labels:
         await callback.answer(t("commands.mode.unknown_mode", locale))
         return
-    current = get_mode(callback.from_user.id)
+    current = await get_mode(callback.from_user.id)
     user_modes[callback.from_user.id] = new_mode
     logger.info("Mode change: user_id=%d: %s -> %s", callback.from_user.id, current, new_mode)
     await callback.answer(mode_labels[new_mode])
@@ -110,7 +110,7 @@ async def handle_mode_callback(callback: CallbackQuery):
 
 @router.callback_query(F.data == "cancel")
 async def handle_cancel_callback(callback: CallbackQuery):
-    locale = get_locale_from_callback(callback)
+    locale = await get_locale_from_callback(callback)
     user_id = callback.from_user.id
     task = active_tasks.get(user_id)
     if task and not task.done():
@@ -127,7 +127,7 @@ async def handle_cancel_callback(callback: CallbackQuery):
 
 @router.message(Command("clear"))
 async def cmd_clear(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     if not is_allowed(message.from_user.id):
         return
     logger.info("/clear from user_id=%d, history_size=%d", message.from_user.id, len(get_history(message.from_user.id)))
@@ -137,7 +137,7 @@ async def cmd_clear(message: types.Message):
 
 @router.message(Command("model"))
 async def cmd_model(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("/model from user_id=%d", message.from_user.id)
     if not is_allowed(message.from_user.id):
         return
@@ -151,7 +151,7 @@ async def cmd_model(message: types.Message):
 
 @router.message(Command("savedoc"))
 async def cmd_savedoc(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("/savedoc from user_id=%d", message.from_user.id)
     if not is_allowed(message.from_user.id):
         return
@@ -169,7 +169,7 @@ async def cmd_savedoc(message: types.Message):
 
 @router.message(Command("stop"))
 async def cmd_stop(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     if not is_allowed(message.from_user.id):
         return
     user_id = message.from_user.id

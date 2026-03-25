@@ -9,7 +9,7 @@ import time
 
 import openai
 
-from application.state import add_to_history, get_history, get_user_setting
+from application.state import add_to_history, get_history, get_user_setting_async
 from shared.config import (
     DEFAULT_LANGUAGE,
     LLM_API_KEY,
@@ -40,12 +40,12 @@ _default_client = openai.AsyncOpenAI(
 _clients: dict[tuple[str, str], openai.AsyncOpenAI] = {}
 
 
-def _get_client(user_id: int = 0) -> openai.AsyncOpenAI:
+async def _get_client(user_id: int = 0) -> openai.AsyncOpenAI:
     """Return a cached AsyncOpenAI client for the user's effective credentials."""
     if not user_id:
         return _default_client
-    api_key = get_user_setting(user_id, "llm_api_key")
-    base_url = get_user_setting(user_id, "llm_base_url")
+    api_key = await get_user_setting_async(user_id, "llm_api_key")
+    base_url = await get_user_setting_async(user_id, "llm_base_url")
     if not api_key and not base_url:
         return _default_client
     api_key = api_key or LLM_API_KEY
@@ -60,10 +60,10 @@ def _get_client(user_id: int = 0) -> openai.AsyncOpenAI:
     return _clients[cache_key]
 
 
-def _get_model(user_id: int = 0) -> str:
+async def _get_model(user_id: int = 0) -> str:
     """Return the effective LLM model for the user."""
     if user_id:
-        return get_user_setting(user_id, "llm_model") or LLM_MODEL
+        return await get_user_setting_async(user_id, "llm_model") or LLM_MODEL
     return LLM_MODEL
 
 
@@ -91,8 +91,8 @@ async def ask_ollama(user_id: int, user_message: str, locale: str = DEFAULT_LANG
     )
     t0 = time.time()
 
-    client = _get_client(user_id)
-    model = _get_model(user_id)
+    client = await _get_client(user_id)
+    model = await _get_model(user_id)
     msg = await _chat_with_retry(
         client,
         model=model,
@@ -123,8 +123,8 @@ async def summarize_ollama(
 
     user_content = f"Видео: {title}\n\nТекст:\n{text}" if title else text
 
-    client = _get_client(user_id)
-    model = _get_model(user_id)
+    client = await _get_client(user_id)
+    model = await _get_model(user_id)
     msg = await _chat_with_retry(
         client,
         model=model,
@@ -149,8 +149,8 @@ async def format_note_ollama(text: str, locale: str = DEFAULT_LANGUAGE, user_id:
     logger.info("Note format request: text_len=%d", len(text))
     t0 = time.time()
 
-    client = _get_client(user_id)
-    model = _get_model(user_id)
+    client = await _get_client(user_id)
+    model = await _get_model(user_id)
     msg = await _chat_with_retry(
         client,
         model=model,

@@ -16,7 +16,7 @@ router = Router(name="oauth_callback")
 @router.message(CommandStart(deep_link="oauth_*"))
 async def cmd_start_oauth(message: types.Message, state):
     """Handle OAuth callback from Yandex via Telegram deep link."""
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("OAuth callback from user_id=%d", message.from_user.id)
 
     deep_link = message.text.split()[-1] if " " in message.text else ""

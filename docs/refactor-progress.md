@@ -597,7 +597,7 @@
 - [x] No circular dependencies
 - [x] Domain layer isolated
 - [x] All files under 150 lines (or justified exception)
-- [x] Documentation updated (REFACTOR_PROGRESS.md)
+- [x] Documentation updated (refactor-progress.md)
 - [ ] Tests passing (pending manual testing)
 
 **Layer Structure:**

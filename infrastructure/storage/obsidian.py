@@ -13,7 +13,7 @@ from pathlib import Path
 
 import httpx
 
-from application.state import get_user_setting, get_user_setting_json
+from application.state import get_user_setting_async, get_user_setting_json_async
 from infrastructure.external_api.yandex_client import refresh_access_token
 from shared.config import (
     OBSIDIAN_INBOX_FOLDER,
@@ -26,19 +26,19 @@ logger = logging.getLogger(__name__)
 _WEBDAV_BASE = "https://webdav.yandex.ru"
 
 
-def _get_cfg(user_id: int) -> dict:
+async def _get_cfg(user_id: int) -> dict:
     """Resolve effective Obsidian/Yandex.Disk config for a user."""
-    oauth_token = get_user_setting_json(user_id, "yandex_oauth_token")
+    oauth_token = await get_user_setting_json_async(user_id, "yandex_oauth_token")
     return {
-        "yadisk_path": get_user_setting(user_id, "yadisk_path") or YANDEX_DISK_PATH,
-        "vault_path": get_user_setting(user_id, "obsidian_vault_path") or OBSIDIAN_VAULT_PATH,
-        "inbox_folder": get_user_setting(user_id, "obsidian_inbox_folder") or OBSIDIAN_INBOX_FOLDER,
+        "yadisk_path": await get_user_setting_async(user_id, "yadisk_path") or YANDEX_DISK_PATH,
+        "vault_path": await get_user_setting_async(user_id, "obsidian_vault_path") or OBSIDIAN_VAULT_PATH,
+        "inbox_folder": await get_user_setting_async(user_id, "obsidian_inbox_folder") or OBSIDIAN_INBOX_FOLDER,
         "oauth_token": oauth_token,
     }
 
 
-def is_obsidian_enabled(user_id: int = 0) -> bool:
-    cfg = _get_cfg(user_id)
+async def is_obsidian_enabled(user_id: int = 0) -> bool:
+    cfg = await _get_cfg(user_id)
     # OAuth token takes priority
     if cfg["oauth_token"] and cfg["oauth_token"].get("access_token"):
         return True
@@ -57,7 +57,7 @@ async def save_note(filename: str, content: str, user_id: int = 0) -> tuple[str,
     Returns tuple of (location, disk_url) where disk_url is None for local saves.
     Raises on failure.
     """
-    cfg = _get_cfg(user_id)
+    cfg = await _get_cfg(user_id)
     if cfg["oauth_token"] and cfg["oauth_token"].get("access_token"):
         return await _save_webdav_oauth(filename, content, cfg, user_id)
     location = _save_local(filename, content, cfg)
@@ -91,7 +91,7 @@ async def _save_webdav_oauth(filename: str, content: str, cfg: dict, user_id: in
 
     Returns tuple of (location, disk_url).
     """
-    from application.state import set_user_setting_json
+    from application.state import set_user_setting_json_async
 
     oauth_token = cfg["oauth_token"]
 
@@ -103,7 +103,7 @@ async def _save_webdav_oauth(filename: str, content: str, cfg: dict, user_id: in
         if new_token:
             new_token_dict = new_token.to_dict()
             new_token_dict["login"] = oauth_token.get("login")
-            set_user_setting_json(user_id, "yandex_oauth_token", new_token_dict)
+            await set_user_setting_json_async(user_id, "yandex_oauth_token", new_token_dict)
             oauth_token = new_token_dict
 
     access_token = oauth_token["access_token"]

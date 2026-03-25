@@ -7,6 +7,6 @@ except PackageNotFoundError:
     import re
     from pathlib import Path
 
-    _pyproject = Path(__file__).parent / "pyproject.toml"
+    _pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
     _match = re.search(r'^version\s*=\s*"([^"]+)"', _pyproject.read_text(), re.MULTILINE)
     __version__ = _match.group(1) if _match else "unknown"

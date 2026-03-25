@@ -38,11 +38,11 @@ from shared.utils import escape_md, get_locale_from_message
 async def _check_free_tier(message: types.Message, locale: str) -> bool:
     """Check free-tier limit and count usage. Returns False if blocked."""
     user_id = message.from_user.id
-    if not can_use_shared_credentials(user_id):
+    if not await can_use_shared_credentials(user_id):
         await message.answer(t("settings.free_tier.limit_reached", locale, limit=FREE_USES_LIMIT))
         return False
     # Count usage only for users subject to the free tier
-    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS and not get_user_setting(user_id, "llm_api_key"):
+    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS and not await get_user_setting(user_id, "llm_api_key"):
         new_count = increment_free_uses(user_id)
         remaining = FREE_USES_LIMIT - new_count
         if remaining == 0:
@@ -56,7 +56,7 @@ async def _check_free_tier(message: types.Message, locale: str) -> bool:
 
 async def process_youtube(message: types.Message, url: str, diarize: bool):
     """Download YouTube audio, transcribe, send transcript file, summarize with inline buttons."""
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     user_id = message.from_user.id
     logger.info("YouTube: user_id=%d, url=%s, diarize=%s", user_id, url, diarize)
     if not await _check_free_tier(message, locale):
@@ -155,13 +155,13 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
 
 async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: str):
     """Download audio file → transcribe → (LLM if chat mode) → reply."""
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     user_id = message.from_user.id
     logger.info(
         "Audio: user_id=%d, type=%s, mode=%s, file_id=%s",
         user_id,
         suffix,
-        get_mode(user_id),
+        await get_mode(user_id),
         file_id[:20],
     )
     if not await _check_free_tier(message, locale):
@@ -195,7 +195,7 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
             return
 
         # 5. Obsidian note mode — format transcription as a structured Markdown note
-        if get_mode(user_id) == "note":
+        if await get_mode(user_id) == "note":
             await processing_msg.edit_text(t("pipelines.audio.formatting_note", locale))
             title, tags, body = await format_note_ollama(user_text, locale, user_id=user_id)
 
@@ -212,7 +212,7 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
 
             vault_saved = False
             disk_url = None
-            if is_obsidian_enabled(user_id):
+            if await is_obsidian_enabled(user_id):
                 try:
                     location, disk_url = await save_note(filename, note_md, user_id=user_id)
                     vault_saved = True

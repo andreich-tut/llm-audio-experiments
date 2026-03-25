@@ -106,7 +106,7 @@ def detect_language_from_telegram(language_code: str | None) -> str:
     return DEFAULT_LANGUAGE
 
 
-def get_user_locale(user_id: int, telegram_language_code: str | None = None) -> str:
+async def get_user_locale(user_id: int, telegram_language_code: str | None = None) -> str:
     """
     Get locale for a specific user.
 
@@ -119,10 +119,10 @@ def get_user_locale(user_id: int, telegram_language_code: str | None = None) -> 
         user_id: Telegram user ID
         telegram_language_code: User's language code from Telegram (e.g., 'en', 'ru', 'uk')
     """
-    from application.state import get_language
+    from application.state import get_language_async
 
     # Check if user has a saved preference
-    saved_lang = get_language(user_id)
+    saved_lang = await get_language_async(user_id)
     if saved_lang and saved_lang in SUPPORTED_LANGUAGES:
         return saved_lang
 

@@ -28,6 +28,13 @@ repos:
         files: ^webapp/src/.*\.[jt]sx?$
         pass_filenames: false
 
+      - id: bot-import-check
+        name: Bot import check
+        entry: bash -c './venv/bin/python3 -c "from bot import main"'
+        language: system
+        files: \.py$
+        pass_filenames: false
+
       - id: bump-version
         name: Bump patch version
         entry: .githooks/bump-version.sh

@@ -21,7 +21,7 @@ router = Router(name="settings_oauth")
 
 @router.callback_query(F.data == "settings:oauth:login")
 async def cb_oauth_login(callback: CallbackQuery, state: FSMContext):
-    locale = get_locale_from_callback(callback)
+    locale = await get_locale_from_callback(callback)
 
     if not YANDEX_OAUTH_CLIENT_ID:
         await callback.answer(t("settings.oauth.not_configured", locale), show_alert=True)
@@ -49,7 +49,7 @@ async def cb_oauth_login(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "settings:oauth:disconnect")
 async def cb_oauth_disconnect(callback: CallbackQuery):
-    locale = get_locale_from_callback(callback)
+    locale = await get_locale_from_callback(callback)
     user_id = callback.from_user.id
 
     await delete_oauth_token_async(user_id, "yandex")
@@ -57,6 +57,6 @@ async def cb_oauth_disconnect(callback: CallbackQuery):
 
     await callback.answer(t("settings.oauth.disconnected", locale), show_alert=False)
     await callback.message.edit_text(
-        _yadisk_text(user_id, locale),
-        reply_markup=_yadisk_kb(locale, user_id),
+        await _yadisk_text(user_id, locale),
+        reply_markup=await _yadisk_kb(locale, user_id),
     )

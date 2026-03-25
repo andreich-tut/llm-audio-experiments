@@ -30,7 +30,7 @@ alembic/
     └── 001_initial_schema.py  # Initial migration
 
 alembic.ini              # Alembic configuration
-PERSISTENCE.md           # Complete documentation
+persistence.md           # Complete documentation
 ```
 
 ## Files Modified
@@ -113,6 +113,6 @@ All checks passed:
 
 ## Documentation
 
-- **PERSISTENCE.md** - Complete persistence guide
+- **persistence.md** - Complete persistence guide
 - **README.md** - Updated with Docker persistence note
 - **.env.example** - Updated with OAuth-first configuration

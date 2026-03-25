@@ -76,11 +76,11 @@ def get_audio_from_msg(msg: types.Message) -> tuple[str, str] | None:
     return None
 
 
-def get_locale_from_message(message: Message) -> str:
+async def get_locale_from_message(message: Message) -> str:
     """Get locale from a Telegram message."""
-    return get_user_locale(message.from_user.id, message.from_user.language_code)
+    return await get_user_locale(message.from_user.id, message.from_user.language_code)
 
 
-def get_locale_from_callback(callback: CallbackQuery) -> str:
+async def get_locale_from_callback(callback: CallbackQuery) -> str:
     """Get locale from a Telegram callback query."""
-    return get_user_locale(callback.from_user.id, callback.from_user.language_code)
+    return await get_user_locale(callback.from_user.id, callback.from_user.language_code)

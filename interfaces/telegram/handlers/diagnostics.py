@@ -20,7 +20,7 @@ router = Router(name="diagnostics")
 
 @router.message(Command("ping"))
 async def cmd_ping(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("/ping from user_id=%d", message.from_user.id)
     if not is_allowed(message.from_user.id):
         return
@@ -34,7 +34,7 @@ async def cmd_ping(message: types.Message):
 
 @router.message(Command("limits"))
 async def cmd_limits(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("/limits from user_id=%d", message.from_user.id)
     if not is_allowed(message.from_user.id):
         return
@@ -70,13 +70,13 @@ async def cmd_limits(message: types.Message):
 
 @router.message(Command("lang"))
 async def cmd_lang(message: types.Message):
-    locale = get_locale_from_message(message)
+    locale = await get_locale_from_message(message)
     logger.info("/lang from user_id=%d", message.from_user.id)
     if not is_allowed(message.from_user.id):
         return
     from application.state import get_language
 
-    current_lang = get_language(message.from_user.id)
+    current_lang = await get_language(message.from_user.id)
     current_label = LANGUAGE_CODES.get(current_lang, current_lang)
     await message.answer(
         t("commands.lang.current_language", locale, language=current_label)
@@ -88,12 +88,13 @@ async def cmd_lang(message: types.Message):
 
 @router.callback_query(F.data.startswith("lang:"))
 async def handle_lang_callback(callback: CallbackQuery):
-    locale = get_locale_from_callback(callback)
+    locale = await get_locale_from_callback(callback)
     new_lang = callback.data.split(":", 1)[1]
     if new_lang not in LANGUAGE_CODES:
         await callback.answer(t("commands.lang.unknown_language", locale))
         return
-    set_language(callback.from_user.id, new_lang)
+
+    await set_language(callback.from_user.id, new_lang)
     new_label = LANGUAGE_CODES[new_lang]
     logger.info("Language change: user_id=%d: -> %s", callback.from_user.id, new_lang)
     await callback.answer(t("commands.lang.language_changed", locale, language=new_label))

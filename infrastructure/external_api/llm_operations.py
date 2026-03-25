@@ -24,8 +24,8 @@ async def ask_ollama(user_id: int, user_message: str, locale: str = DEFAULT_LANG
 
     from shared.config import SYSTEM_PROMPT
 
-    client = _get_client(user_id)
-    model = _get_model(user_id)
+    client = await _get_client(user_id)
+    model = await _get_model(user_id)
     msg = await _chat_with_retry(
         client,
         model=model,
@@ -56,8 +56,8 @@ async def summarize_ollama(
 
     user_content = f"Видео: {title}\n\nТекст:\n{text}" if title else text
 
-    client = _get_client(user_id)
-    model = _get_model(user_id)
+    client = await _get_client(user_id)
+    model = await _get_model(user_id)
     msg = await _chat_with_retry(
         client,
         model=model,
@@ -82,8 +82,8 @@ async def format_note_ollama(text: str, locale: str = DEFAULT_LANGUAGE, user_id:
     logger.info("Note format request: text_len=%d", len(text))
     t0 = time.time()
 
-    client = _get_client(user_id)
-    model = _get_model(user_id)
+    client = await _get_client(user_id)
+    model = await _get_model(user_id)
     msg = await _chat_with_retry(
         client,
         model=model,

@@ -4,7 +4,7 @@ Settings UI helpers: keyboard builders, text builders, metadata dicts.
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from application.state import get_user_setting, get_user_setting_json
+from application.state import get_user_setting_async, get_user_setting_json_async
 from shared.config import LLM_BASE_URL, LLM_MODEL, OBSIDIAN_INBOX_FOLDER, YANDEX_DISK_PATH
 from shared.i18n import t
 
@@ -38,8 +38,8 @@ def _mask(value: str) -> str:
     return value[:4] + "..." + value[-4:]
 
 
-def _val(user_id: int, key: str, fallback: str, locale: str, secret: bool = False) -> str:
-    v = get_user_setting(user_id, key)
+async def _val(user_id: int, key: str, fallback: str, locale: str, secret: bool = False) -> str:
+    v = await get_user_setting_async(user_id, key)
     if v:
         return _mask(v) if secret else v
     return f"{fallback} ({t('settings.global_default', locale)})"
@@ -80,8 +80,8 @@ def _llm_kb(locale: str) -> InlineKeyboardMarkup:
     )
 
 
-def _yadisk_kb(locale: str, user_id: int) -> InlineKeyboardMarkup:
-    oauth_token = get_user_setting_json(user_id, "yandex_oauth_token")
+async def _yadisk_kb(locale: str, user_id: int) -> InlineKeyboardMarkup:
+    oauth_token = await get_user_setting_json_async(user_id, "yandex_oauth_token")
     is_connected = oauth_token and oauth_token.get("access_token")
 
     buttons = []
@@ -129,16 +129,16 @@ def _cancel_kb(locale: str) -> InlineKeyboardMarkup:
 # ── Text builders ──────────────────────────────────────────────────────────────
 
 
-def _llm_text(user_id: int, locale: str) -> str:
-    api_key = get_user_setting(user_id, "llm_api_key")
+async def _llm_text(user_id: int, locale: str) -> str:
+    api_key = await get_user_setting_async(user_id, "llm_api_key")
     api_key_display = _mask(api_key) if api_key else t("settings.not_set", locale)
-    base_url = _val(user_id, "llm_base_url", LLM_BASE_URL, locale)
-    model = _val(user_id, "llm_model", LLM_MODEL, locale)
+    base_url = await _val(user_id, "llm_base_url", LLM_BASE_URL, locale)
+    model = await _val(user_id, "llm_model", LLM_MODEL, locale)
     return f"{t('settings.llm_title', locale)}\n\nAPI Key: {api_key_display}\nBase URL: {base_url}\nModel: {model}"
 
 
-def _yadisk_text(user_id: int, locale: str) -> str:
-    oauth_token = get_user_setting_json(user_id, "yandex_oauth_token")
+async def _yadisk_text(user_id: int, locale: str) -> str:
+    oauth_token = await get_user_setting_json_async(user_id, "yandex_oauth_token")
     if oauth_token and oauth_token.get("access_token"):
         oauth_login = oauth_token.get("login", "Yandex User")
         login_display = f"{oauth_login} (OAuth)"
@@ -147,13 +147,13 @@ def _yadisk_text(user_id: int, locale: str) -> str:
         )
     else:
         status = t("settings.yadisk_not_connected", locale)
-    path = _val(user_id, "yadisk_path", YANDEX_DISK_PATH, locale)
+    path = await _val(user_id, "yadisk_path", YANDEX_DISK_PATH, locale)
     return f"{t('settings.yadisk_title', locale)}\n\n{status}\n{t('settings.yadisk_path_label', locale)}: {path}"
 
 
-def _obsidian_text(user_id: int, locale: str) -> str:
-    vault = get_user_setting(user_id, "obsidian_vault_path") or t("settings.not_set", locale)
-    inbox = _val(user_id, "obsidian_inbox_folder", OBSIDIAN_INBOX_FOLDER, locale)
+async def _obsidian_text(user_id: int, locale: str) -> str:
+    vault = await get_user_setting_async(user_id, "obsidian_vault_path") or t("settings.not_set", locale)
+    inbox = await _val(user_id, "obsidian_inbox_folder", OBSIDIAN_INBOX_FOLDER, locale)
     return f"{t('settings.obsidian_title', locale)}\n\nVault Path: {vault}\nInbox Folder: {inbox}"
 
 
