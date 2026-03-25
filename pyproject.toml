@@ -1,6 +1,6 @@
 [project]
 name = "tg-voice"
-version = "0.1.100"
+version = "0.1.105"
 
 [tool.ruff]
 line-length = 120
@@ -12,3 +12,19 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tools/*" = ["E402"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+include = ["bot.py", "app_runner.py", "application", "infrastructure", "interfaces", "shared"]
+exclude = ["**/__pycache__", "venv"]
+venvPath = "."
+venv = "venv"
+
+# Suppress non-critical type warnings for third-party libraries and aiogram optional types
+reportOptionalMemberAccess = "warning"
+reportUnknownMemberType = "none"
+reportUnknownVariableType = "none"
+reportUnknownParameterType = "none"
+reportMissingTypeStubs = "none"
+reportGeneralTypeIssues = "warning"

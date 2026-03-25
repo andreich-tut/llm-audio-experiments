@@ -30,33 +30,46 @@ async def cb_oauth_login(callback: CallbackQuery, state: FSMContext):
     state_value = uuid.uuid4().hex[:16]
     await state.update_data(oauth_state=state_value)
 
+    if not callback.bot:
+        await callback.answer(t("settings.oauth.not_configured", locale), show_alert=True)
+        return
+
     bot_info = await callback.bot(GetMe())
     bot_username = bot_info.username
+    if not bot_username:
+        await callback.answer(t("settings.oauth.not_configured", locale), show_alert=True)
+        return
 
     oauth_url = get_oauth_url(state_value, bot_username)
 
     await callback.answer()
-    await callback.message.edit_text(
-        t("settings.oauth.login_instruction_auto", locale),
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text=t("settings.oauth.login_button", locale), url=oauth_url)],
-                [InlineKeyboardButton(text=t("settings.back_btn", locale), callback_data="settings:back")],
-            ]
-        ),
-    )
+    if callback.message:
+        await callback.message.edit_text(  # type: ignore[union-attr]
+            t("settings.oauth.login_instruction_auto", locale),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text=t("settings.oauth.login_button", locale), url=oauth_url)],
+                    [InlineKeyboardButton(text=t("settings.back_btn", locale), callback_data="settings:back")],
+                ]
+            ),
+        )
 
 
 @router.callback_query(F.data == "settings:oauth:disconnect")
 async def cb_oauth_disconnect(callback: CallbackQuery):
     locale = await get_locale_from_callback(callback)
-    user_id = callback.from_user.id
+    from_user = callback.from_user
+    if not from_user or not callback.message:
+        await callback.answer()
+        return
+    user_id = from_user.id
 
     await delete_oauth_token_async(user_id, "yandex")
     logger.info("OAuth disconnected: user_id=%d", user_id)
 
     await callback.answer(t("settings.oauth.disconnected", locale), show_alert=False)
-    await callback.message.edit_text(
-        await _yadisk_text(user_id, locale),
-        reply_markup=await _yadisk_kb(locale, user_id),
-    )
+    if callback.message:
+        await callback.message.edit_text(  # type: ignore[union-attr]
+            await _yadisk_text(user_id, locale),
+            reply_markup=await _yadisk_kb(locale, user_id),
+        )

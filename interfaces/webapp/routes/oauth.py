@@ -36,7 +36,10 @@ async def _get_bot_username() -> str:
         resp = await client.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getMe")
         resp.raise_for_status()
         data = resp.json()
-        _bot_username = data["result"]["username"]
+        username: str | None = data["result"]["username"]
+        if not username:
+            raise RuntimeError("Bot username is empty")
+        _bot_username = username
         logger.info("Bot username resolved: @%s", _bot_username)
     return _bot_username
 

@@ -21,8 +21,11 @@ router = Router(name="diagnostics")
 @router.message(Command("ping"))
 async def cmd_ping(message: types.Message):
     locale = await get_locale_from_message(message)
-    logger.info("/ping from user_id=%d", message.from_user.id)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
+        return
+    logger.info("/ping from user_id=%d", from_user.id)
+    if not is_allowed(from_user.id):
         return
     try:
         model = await ping_llm()
@@ -35,8 +38,11 @@ async def cmd_ping(message: types.Message):
 @router.message(Command("limits"))
 async def cmd_limits(message: types.Message):
     locale = await get_locale_from_message(message)
-    logger.info("/limits from user_id=%d", message.from_user.id)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
+        return
+    logger.info("/limits from user_id=%d", from_user.id)
+    if not is_allowed(from_user.id):
         return
     status_msg = await message.answer(t("commands.limits.checking", locale))
     try:
@@ -62,21 +68,26 @@ async def cmd_limits(message: types.Message):
         if errors:
             text += t("commands.limits.errors_header", locale) + "\n".join(errors)
 
-        await status_msg.edit_text(text, parse_mode=ParseMode.MARKDOWN)
+        if status_msg:
+            await status_msg.edit_text(text, parse_mode=ParseMode.MARKDOWN)  # type: ignore[union-attr]
     except Exception as e:
         logger.exception("Limits command error")
-        await status_msg.edit_text(t("commands.limits.error", locale, error=str(e)))
+        if status_msg:
+            await status_msg.edit_text(t("commands.limits.error", locale, error=str(e)))  # type: ignore[union-attr]
 
 
 @router.message(Command("lang"))
 async def cmd_lang(message: types.Message):
     locale = await get_locale_from_message(message)
-    logger.info("/lang from user_id=%d", message.from_user.id)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
+        return
+    logger.info("/lang from user_id=%d", from_user.id)
+    if not is_allowed(from_user.id):
         return
     from application.state import get_language
 
-    current_lang = await get_language(message.from_user.id)
+    current_lang = await get_language(from_user.id)
     current_label = LANGUAGE_CODES.get(current_lang, current_lang)
     await message.answer(
         t("commands.lang.current_language", locale, language=current_label)
@@ -89,16 +100,20 @@ async def cmd_lang(message: types.Message):
 @router.callback_query(F.data.startswith("lang:"))
 async def handle_lang_callback(callback: CallbackQuery):
     locale = await get_locale_from_callback(callback)
+    from_user = callback.from_user
+    if not from_user or not callback.message:
+        await callback.answer()
+        return
     new_lang = callback.data.split(":", 1)[1]
     if new_lang not in LANGUAGE_CODES:
         await callback.answer(t("commands.lang.unknown_language", locale))
         return
 
-    await set_language(callback.from_user.id, new_lang)
+    await set_language(from_user.id, new_lang)
     new_label = LANGUAGE_CODES[new_lang]
-    logger.info("Language change: user_id=%d: -> %s", callback.from_user.id, new_lang)
+    logger.info("Language change: user_id=%d: -> %s", from_user.id, new_lang)
     await callback.answer(t("commands.lang.language_changed", locale, language=new_label))
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         t("commands.lang.current_language", locale, language=new_label),
         reply_markup=language_keyboard(new_lang, locale),
     )

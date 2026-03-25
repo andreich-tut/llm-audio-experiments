@@ -56,7 +56,7 @@ def get_audio_from_msg(msg: types.Message) -> tuple[str, str] | None:
     if msg.voice:
         return msg.voice.file_id, ".ogg"
     if msg.audio:
-        return msg.audio.file_id, audio_suffix(msg.audio.mime_type, msg.audio.file_name)
+        return msg.audio.file_id, audio_suffix(msg.audio.mime_type or "", msg.audio.file_name)
     if msg.video_note:
         return msg.video_note.file_id, ".mp4"
     if msg.video:
@@ -78,9 +78,19 @@ def get_audio_from_msg(msg: types.Message) -> tuple[str, str] | None:
 
 async def get_locale_from_message(message: Message) -> str:
     """Get locale from a Telegram message."""
-    return await get_user_locale(message.from_user.id, message.from_user.language_code)
+    from_user = message.from_user
+    if not from_user:
+        from shared.config import DEFAULT_LANGUAGE
+
+        return DEFAULT_LANGUAGE
+    return await get_user_locale(from_user.id, from_user.language_code)
 
 
 async def get_locale_from_callback(callback: CallbackQuery) -> str:
     """Get locale from a Telegram callback query."""
-    return await get_user_locale(callback.from_user.id, callback.from_user.language_code)
+    from_user = callback.from_user
+    if not from_user:
+        from shared.config import DEFAULT_LANGUAGE
+
+        return DEFAULT_LANGUAGE
+    return await get_user_locale(from_user.id, from_user.language_code)

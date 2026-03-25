@@ -39,8 +39,11 @@ router = Router(name="commands")
 @router.message(CommandStart())
 async def cmd_start(message: types.Message):
     locale = await get_locale_from_message(message)
-    logger.info("/start from user_id=%d (@%s)", message.from_user.id, message.from_user.username)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
+        return
+    logger.info("/start from user_id=%d (@%s)", from_user.id, from_user.username)
+    if not is_allowed(from_user.id):
         return
     gdocs_line = "\n" + t("commands.start.savedoc", locale) if gdocs_service else ""
     await message.answer(
@@ -78,10 +81,13 @@ async def cmd_start(message: types.Message):
 @router.message(Command("mode"))
 async def cmd_mode(message: types.Message):
     locale = await get_locale_from_message(message)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
         return
-    current = await get_mode(message.from_user.id)
-    logger.info("/mode user_id=%d, current=%s", message.from_user.id, current)
+    if not is_allowed(from_user.id):
+        return
+    current = await get_mode(from_user.id)
+    logger.info("/mode user_id=%d, current=%s", from_user.id, current)
     await message.answer(
         t("commands.mode.current_mode", locale, mode=get_mode_labels(locale).get(current, current))
         + "\n"
@@ -93,16 +99,20 @@ async def cmd_mode(message: types.Message):
 @router.callback_query(F.data.startswith("mode:"))
 async def handle_mode_callback(callback: CallbackQuery):
     locale = await get_locale_from_callback(callback)
+    from_user = callback.from_user
+    if not from_user:
+        await callback.answer()
+        return
     new_mode = callback.data.split(":", 1)[1]
     mode_labels = get_mode_labels(locale)
     if new_mode not in mode_labels:
         await callback.answer(t("commands.mode.unknown_mode", locale))
         return
-    current = await get_mode(callback.from_user.id)
-    user_modes[callback.from_user.id] = new_mode
-    logger.info("Mode change: user_id=%d: %s -> %s", callback.from_user.id, current, new_mode)
+    current = await get_mode(from_user.id)
+    user_modes[from_user.id] = new_mode
+    logger.info("Mode change: user_id=%d: %s -> %s", from_user.id, current, new_mode)
     await callback.answer(mode_labels[new_mode])
-    await callback.message.edit_text(
+    await callback.message.edit_text(  # type: ignore[union-attr]
         _get_mode_descriptions(locale)[new_mode],
         reply_markup=mode_keyboard(new_mode, locale),
     )
@@ -111,7 +121,11 @@ async def handle_mode_callback(callback: CallbackQuery):
 @router.callback_query(F.data == "cancel")
 async def handle_cancel_callback(callback: CallbackQuery):
     locale = await get_locale_from_callback(callback)
-    user_id = callback.from_user.id
+    from_user = callback.from_user
+    if not from_user:
+        await callback.answer()
+        return
+    user_id = from_user.id
     task = active_tasks.get(user_id)
     if task and not task.done():
         task.cancel()
@@ -120,7 +134,8 @@ async def handle_cancel_callback(callback: CallbackQuery):
     else:
         await callback.answer(t("callbacks.cancel.already_done", locale))
         try:
-            await callback.message.edit_reply_markup(reply_markup=None)
+            if callback.message:
+                await callback.message.edit_reply_markup(reply_markup=None)  # type: ignore[union-attr]
         except Exception:
             pass
 
@@ -128,18 +143,24 @@ async def handle_cancel_callback(callback: CallbackQuery):
 @router.message(Command("clear"))
 async def cmd_clear(message: types.Message):
     locale = await get_locale_from_message(message)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
         return
-    logger.info("/clear from user_id=%d, history_size=%d", message.from_user.id, len(get_history(message.from_user.id)))
-    clear_history(message.from_user.id)
+    if not is_allowed(from_user.id):
+        return
+    logger.info("/clear from user_id=%d, history_size=%d", from_user.id, len(get_history(from_user.id)))
+    clear_history(from_user.id)
     await message.answer(t("commands.clear.history_cleared", locale))
 
 
 @router.message(Command("model"))
 async def cmd_model(message: types.Message):
     locale = await get_locale_from_message(message)
-    logger.info("/model from user_id=%d", message.from_user.id)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
+        return
+    logger.info("/model from user_id=%d", from_user.id)
+    if not is_allowed(from_user.id):
         return
     await message.answer(
         t("commands.model.llm_model", locale, llm_model=LLM_MODEL)
@@ -152,14 +173,17 @@ async def cmd_model(message: types.Message):
 @router.message(Command("savedoc"))
 async def cmd_savedoc(message: types.Message):
     locale = await get_locale_from_message(message)
-    logger.info("/savedoc from user_id=%d", message.from_user.id)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
+        return
+    logger.info("/savedoc from user_id=%d", from_user.id)
+    if not is_allowed(from_user.id):
         return
     if gdocs_service is None:
         await message.answer(t("commands.savedoc.not_configured", locale))
         return
-    enabled = not user_gdocs.get(message.from_user.id, False)
-    user_gdocs[message.from_user.id] = enabled
+    enabled = not user_gdocs.get(from_user.id, False)
+    user_gdocs[from_user.id] = enabled
     if enabled:
         document_url = f"https://docs.google.com/document/d/{GDOCS_DOCUMENT_ID}/edit"
         await message.answer(t("commands.savedoc.enabled", locale, document_url=document_url))
@@ -170,9 +194,12 @@ async def cmd_savedoc(message: types.Message):
 @router.message(Command("stop"))
 async def cmd_stop(message: types.Message):
     locale = await get_locale_from_message(message)
-    if not is_allowed(message.from_user.id):
+    from_user = message.from_user
+    if not from_user:
         return
-    user_id = message.from_user.id
+    if not is_allowed(from_user.id):
+        return
+    user_id = from_user.id
     task = active_tasks.get(user_id)
     if task and not task.done():
         task.cancel()

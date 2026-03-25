@@ -16,7 +16,7 @@ from shared.config import GROQ_API_KEY, WARP_PROXY, WHISPER_BACKEND, WHISPER_DEV
 
 # Make tools/ importable
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
-from audio_splitter import split_file
+from audio_splitter import split_file  # pyright: ignore[reportMissingImports]
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,8 @@ else:
 
 def _transcribe_local(file_path: str) -> tuple[str, str]:
     logger.info("Calling whisper.transcribe()...")
+    if not _whisper:
+        raise RuntimeError("Whisper model not loaded")
     segments, info = _whisper.transcribe(
         file_path,
         language="ru",
@@ -66,7 +68,7 @@ async def _transcribe_groq(file_path: str) -> str:
     if not response.is_success:
         logger.error("Groq API error %d: %s", response.status_code, response.text)
     response.raise_for_status()
-    update_groq_limits(response.headers)
+    update_groq_limits(dict(response.headers))
     text = response.json()["text"]
     logger.info("Groq transcription done, text_len=%d", len(text))
     return text

@@ -6,6 +6,7 @@ Works with OpenRouter, Alibaba DashScope, Ollama, or any OpenAI-compatible endpo
 import asyncio
 import logging
 import time
+from typing import Any
 
 import httpx
 import openai
@@ -71,7 +72,7 @@ async def _get_model(user_id: int = 0) -> str:
     return LLM_MODEL
 
 
-async def _chat_with_retry(client: openai.AsyncOpenAI, **kwargs) -> openai.types.chat.ChatCompletion:
+async def _chat_with_retry(client: openai.AsyncOpenAI, **kwargs) -> Any:  # type: ignore[no-any-return]
     """Call chat.completions.create with exponential backoff on rate limit errors."""
     delays = [5, 15, 30]
     for attempt, delay in enumerate(delays + [None]):

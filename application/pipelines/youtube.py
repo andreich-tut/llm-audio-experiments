@@ -28,7 +28,11 @@ from shared.utils import get_locale_from_message
 async def process_youtube(message: types.Message, url: str, diarize: bool):
     """Download YouTube audio, transcribe, send transcript file, summarize with inline buttons."""
     locale = await get_locale_from_message(message)
-    user_id = message.from_user.id
+    from_user = message.from_user
+    if not from_user:
+        return
+    user_id = from_user.id
+    username = from_user.username
     logger.info("YouTube: user_id=%d, url=%s, diarize=%s", user_id, url, diarize)
     if not await _check_free_tier(message, locale):
         return
@@ -63,8 +67,8 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
         doc = BufferedInputFile(transcript_bytes, filename=f"{safe_title}.txt")
         await message.answer_document(doc, caption=t("pipelines.youtube.transcript_caption", locale))
 
-        if is_gdocs_enabled(message.from_user.id):
-            await save_to_gdocs(message.from_user.id, message.from_user.username, transcript_text)
+        if is_gdocs_enabled(user_id):
+            await save_to_gdocs(user_id, username, transcript_text)
 
         cleanup_yt_cache()
         cache_key = uuid.uuid4().hex[:8]
@@ -101,10 +105,10 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
             pass
         raise
     except ValueError as e:
-        logger.warning("YouTube validation error: user_id=%d, %s", message.from_user.id, e)
+        logger.warning("YouTube validation error: user_id=%d, %s", user_id, e)
         await processing_msg.edit_text(t("pipelines.youtube.validation_error", locale, error=str(e)), reply_markup=None)
     except Exception as e:
-        logger.exception("YouTube processing error: user_id=%d", message.from_user.id)
+        logger.exception("YouTube processing error: user_id=%d", user_id)
         await processing_msg.edit_text(t("pipelines.youtube.processing_error", locale, error=str(e)), reply_markup=None)
     finally:
         if audio_path:

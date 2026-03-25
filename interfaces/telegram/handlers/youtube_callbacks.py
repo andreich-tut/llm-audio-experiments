@@ -22,7 +22,11 @@ router = Router(name="youtube_callbacks")
 async def handle_yt_summary_callback(callback: CallbackQuery):
     """Handle inline button presses for YouTube summary detail levels."""
     locale = await get_locale_from_callback(callback)
-    logger.info("YT callback: user_id=%d, data=%s", callback.from_user.id, callback.data)
+    from_user = callback.from_user
+    if not from_user:
+        await callback.answer()
+        return
+    logger.info("YT callback: user_id=%d, data=%s", from_user.id, callback.data)
     await callback.answer()
 
     parts = callback.data.split(":")
@@ -36,14 +40,16 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
 
     entry = yt_transcripts.get(cache_key)
     if not entry:
-        await callback.message.edit_text(t("callbacks.youtube.expired", locale))
+        if callback.message:
+            await callback.message.edit_text(t("callbacks.youtube.expired", locale))  # type: ignore[union-attr]
         return
 
-    await callback.message.edit_text(t("callbacks.youtube.generate", locale), reply_markup=None)
+    if callback.message:
+        await callback.message.edit_text(t("callbacks.youtube.generate", locale), reply_markup=None)  # type: ignore[union-attr]
 
     try:
         summary = await summarize_ollama(
-            entry["transcript"], detail_level, entry["title"], locale, user_id=callback.from_user.id
+            entry["transcript"], detail_level, entry["title"], locale, user_id=from_user.id
         )
 
         label = get_yt_level_labels(locale).get(detail_level, "")
@@ -51,7 +57,8 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
         full_msg = header + summary
 
         if len(full_msg) > 4000:
-            await callback.message.edit_text(header, parse_mode=ParseMode.MARKDOWN)
+            if callback.message:
+                await callback.message.edit_text(header, parse_mode=ParseMode.MARKDOWN)  # type: ignore[union-attr]
             for i in range(0, len(summary), 4000):
                 await callback.message.answer(summary[i : i + 4000])
             await callback.message.answer(
@@ -59,17 +66,19 @@ async def handle_yt_summary_callback(callback: CallbackQuery):
                 reply_markup=yt_summary_keyboard(cache_key, locale),
             )
         else:
-            await callback.message.edit_text(
-                full_msg,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=yt_summary_keyboard(cache_key, locale),
-            )
+            if callback.message:
+                await callback.message.edit_text(  # type: ignore[union-attr]
+                    full_msg,
+                    parse_mode=ParseMode.MARKDOWN,
+                    reply_markup=yt_summary_keyboard(cache_key, locale),
+                )
 
         entry["ts"] = time.time()  # refresh TTL
 
     except Exception as e:
         logger.exception("YouTube summary callback error")
-        await callback.message.edit_text(
-            t("callbacks.youtube.error", locale, error=str(e)),
-            reply_markup=yt_summary_keyboard(cache_key, locale),
-        )
+        if callback.message:
+            await callback.message.edit_text(  # type: ignore[union-attr]
+                t("callbacks.youtube.error", locale, error=str(e)),
+                reply_markup=yt_summary_keyboard(cache_key, locale),
+            )

@@ -51,20 +51,22 @@ async def cb_settings_back(callback: CallbackQuery, state: FSMContext):
     locale = await get_locale_from_callback(callback)
     await state.clear()
     await callback.answer()
-    await callback.message.edit_text(t("settings.menu_title", locale), reply_markup=_main_kb(locale))
+    await callback.message.edit_text(t("settings.menu_title", locale), reply_markup=_main_kb(locale))  # type: ignore[union-attr]
 
 
 @router.callback_query(F.data.in_({"settings:llm", "settings:yadisk", "settings:obsidian"}))
 async def cb_submenu(callback: CallbackQuery):
     locale = await get_locale_from_callback(callback)
+    from_user = callback.from_user
+    if not from_user or not callback.message:
+        await callback.answer()
+        return
     submenu = callback.data.split(":")[1]
     text_fn, kb_fn = _SUBMENU_FNS[submenu]
     await callback.answer()
-    if submenu == "yadisk":
-        keyboard = await kb_fn(locale, callback.from_user.id)
-    else:
-        keyboard = kb_fn(locale)
-    await callback.message.edit_text(await text_fn(callback.from_user.id, locale), reply_markup=keyboard)
+    # Always await keyboard function (_yadisk_kb is async, others are sync but awaitable)
+    keyboard = await kb_fn(locale, from_user.id) if submenu == "yadisk" else kb_fn(locale)  # type: ignore[misc]
+    await callback.message.edit_text(await text_fn(from_user.id, locale), reply_markup=keyboard)  # type: ignore[union-attr]
 
 
 @router.callback_query(F.data.startswith("settings:set:"))
@@ -84,45 +86,65 @@ async def cb_set_value(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
     await state.set_state(SettingsStates.waiting_for_value)
-    await state.update_data(key=key, submenu=submenu, msg_id=callback.message.message_id)
+    await state.update_data(key=key, submenu=submenu, msg_id=callback.message.message_id)  # type: ignore[arg-type]
 
     prompt = t("settings.send_value", locale, name=label)
-    await callback.message.edit_text(prompt, reply_markup=_cancel_kb(locale))
+    await callback.message.edit_text(prompt, reply_markup=_cancel_kb(locale))  # type: ignore[union-attr]
 
 
 @router.callback_query(F.data == "settings:cancel", StateFilter(SettingsStates.waiting_for_value))
 async def cb_cancel(callback: CallbackQuery, state: FSMContext):
     locale = await get_locale_from_callback(callback)
+    from_user = callback.from_user
+    if not from_user or not callback.message:
+        await callback.answer()
+        return
     data = await state.get_data()
     await state.clear()
     submenu = data.get("submenu", "llm")
     text_fn, kb_fn = _SUBMENU_FNS[submenu]
     await callback.answer()
-    await callback.message.edit_text(await text_fn(callback.from_user.id, locale), reply_markup=kb_fn(locale))
+    keyboard = kb_fn(locale)  # type: ignore[misc]
+    await callback.message.edit_text(await text_fn(from_user.id, locale), reply_markup=keyboard)  # type: ignore[union-attr]
 
 
 @router.callback_query(F.data.startswith("settings:reset:"))
 async def cb_reset_section(callback: CallbackQuery):
     locale = await get_locale_from_callback(callback)
+    from_user = callback.from_user
+    if not from_user or not callback.message:
+        await callback.answer()
+        return
     submenu = callback.data.split(":", 2)[2]
     if submenu not in _SUBMENU_KEYS:
         await callback.answer()
         return
-    await clear_user_settings_section(callback.from_user.id, _SUBMENU_KEYS[submenu])
-    logger.info("Settings reset: user_id=%d, section=%s", callback.from_user.id, submenu)
+    await clear_user_settings_section(from_user.id, _SUBMENU_KEYS[submenu])
+    logger.info("Settings reset: user_id=%d, section=%s", from_user.id, submenu)
     await callback.answer(t("settings.settings_reset", locale, section=submenu))
     text_fn, kb_fn = _SUBMENU_FNS[submenu]
-    await callback.message.edit_text(await text_fn(callback.from_user.id, locale), reply_markup=kb_fn(locale))
+    # _yadisk_kb is async, others are sync
+    if submenu == "yadisk":
+        keyboard = await kb_fn(locale, from_user.id)  # pyright: ignore[reportGeneralTypeIssues]
+    else:
+        keyboard = kb_fn(locale)  # pyright: ignore[reportGeneralTypeIssues]
+    await callback.message.edit_text(await text_fn(from_user.id, locale), reply_markup=keyboard)  # type: ignore[union-attr]
 
 
 @router.message(StateFilter(SettingsStates.waiting_for_value))
 async def handle_setting_value(message: Message, bot: Bot, state: FSMContext):
     locale = await get_locale_from_message(message)
+    from_user = message.from_user
+    if not from_user:
+        return
     data = await state.get_data()
-    key = data.get("key")
-    submenu = data.get("submenu", "llm")
-    msg_id = data.get("msg_id")
+    key: str | None = data.get("key")
+    submenu: str = data.get("submenu", "llm")
+    msg_id: int | None = data.get("msg_id")
     await state.clear()
+
+    if not key or not msg_id:
+        return
 
     value = (message.text or "").strip()
 
@@ -173,18 +195,23 @@ async def handle_setting_value(message: Message, bot: Bot, state: FSMContext):
         await message.answer(t("settings.value_too_long", locale, max=500))
         return
 
-    await set_user_setting(message.from_user.id, key, value)
+    await set_user_setting(from_user.id, key, value)
     label_key, _ = _KEY_META[key]
     label = t(label_key, locale)
-    logger.info("Setting saved: user_id=%d, key=%s", message.from_user.id, key)
+    logger.info("Setting saved: user_id=%d, key=%s", from_user.id, key)
 
     text_fn, kb_fn = _SUBMENU_FNS[submenu]
     try:
+        # _yadisk_kb is async, but this handler is only used for llm submenu
+        if submenu == "yadisk":
+            keyboard = await kb_fn(locale, from_user.id)  # pyright: ignore[reportGeneralTypeIssues]
+        else:
+            keyboard = kb_fn(locale)  # pyright: ignore[reportGeneralTypeIssues]
         await bot.edit_message_text(
-            await text_fn(message.from_user.id, locale),
+            await text_fn(from_user.id, locale),
             chat_id=message.chat.id,
-            message_id=msg_id,
-            reply_markup=kb_fn(locale),
+            message_id=msg_id,  # type: ignore[arg-type]
+            reply_markup=keyboard,  # pyright: ignore[reportArgumentType]
         )
     except Exception:
         pass

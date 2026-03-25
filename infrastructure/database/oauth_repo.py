@@ -145,8 +145,10 @@ class OAuthRepo:
                         oauth = OAuthToken(
                             user_id=user_id,
                             provider="yandex",
-                            access_token=encrypt(value.get("access_token", "")),
-                            refresh_token=encrypt(value.get("refresh_token")) if value.get("refresh_token") else None,
+                            access_token=encrypt(str(value.get("access_token") or "")),
+                            refresh_token=encrypt(str(value.get("refresh_token")))
+                            if value.get("refresh_token")
+                            else None,
                             expires_at=value.get("expires_at"),
                             token_meta=json.dumps(meta, ensure_ascii=False),
                         )

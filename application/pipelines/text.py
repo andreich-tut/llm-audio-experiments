@@ -17,12 +17,18 @@ from shared.utils import get_locale_from_message
 async def process_text(message: types.Message):
     """Send text message to LLM and reply."""
     locale = await get_locale_from_message(message)
-    user_id = message.from_user.id
+    from_user = message.from_user
+    if not from_user:
+        return
+    user_id = from_user.id
+    text = message.text
+    if not text:
+        return
     if not await _check_free_tier(message, locale):
         return
     processing_msg = await message.answer(t("pipelines.text.thinking", locale), reply_markup=stop_keyboard(locale))
     try:
-        response = await ask_ollama(user_id, message.text, locale)
+        response = await ask_ollama(user_id, text, locale)
 
         if len(response) > 4000:
             await processing_msg.delete()

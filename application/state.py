@@ -47,6 +47,7 @@ from application.user_settings import (  # noqa: F401
     set_user_setting_json_async,
 )
 from infrastructure.database import get_db
+from infrastructure.database.database import Database
 from shared.config import ALLOWED_USER_IDS, DEFAULT_LANGUAGE, YT_CACHE_TTL
 
 logger = logging.getLogger(__name__)
@@ -130,10 +131,10 @@ async def set_language(user_id: int, language: str) -> None:
 
 # ── Initialization ─────────────────────────────────────────────────────────────
 
-_db: Optional[object] = None
+_db: Optional[Database] = None
 
 
-def _get_db():
+def _get_db() -> Database:
     global _db
     if _db is None:
         _db = get_db()

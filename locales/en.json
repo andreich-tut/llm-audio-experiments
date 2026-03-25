@@ -150,6 +150,7 @@
       "vault_saved": "\n📁 Saved to vault",
       "vault_saved_with_url": "\n📁 Saved to Yandex.Disk: {disk_url}",
       "file_too_big": "❌ File too large. Telegram Bot API limits file uploads to 20 MB.",
+      "file_not_found": "❌ File not found. Try again.",
       "processing_error": "❌ Error: {error}",
       "stopped": "🛑 Stopped.",
       "thinking": "⏳ Thinking...",

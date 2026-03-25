@@ -155,6 +155,7 @@
       "vault_saved": "\n📁 Сохранено в vault",
       "vault_saved_with_url": "\n📁 Сохранено в Yandex.Disk: {disk_url}",
       "file_too_big": "❌ Файл слишком большой. Telegram Bot API ограничивает загрузку файлов до 20 МБ.",
+      "file_not_found": "❌ Файл не найден. Попробуй ещё раз.",
       "processing_error": "❌ Ошибка: {error}",
       "stopped": "🛑 Остановлено.",
       "thinking": "⏳ Думаю...",

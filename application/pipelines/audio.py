@@ -37,12 +37,15 @@ from shared.utils import escape_md, get_locale_from_message
 
 async def _check_free_tier(message: types.Message, locale: str) -> bool:
     """Check free-tier limit and count usage. Returns False if blocked."""
-    user_id = message.from_user.id
+    from_user = message.from_user
+    if not from_user:
+        return False
+    user_id = from_user.id
     if not await can_use_shared_credentials(user_id):
         await message.answer(t("settings.free_tier.limit_reached", locale, limit=FREE_USES_LIMIT))
         return False
     # Count usage only for users subject to the free tier
-    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS and not await get_user_setting(user_id, "llm_api_key"):
+    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS and not get_user_setting(user_id, "llm_api_key"):
         new_count = increment_free_uses(user_id)
         remaining = FREE_USES_LIMIT - new_count
         if remaining == 0:
@@ -57,7 +60,11 @@ async def _check_free_tier(message: types.Message, locale: str) -> bool:
 async def process_youtube(message: types.Message, url: str, diarize: bool):
     """Download YouTube audio, transcribe, send transcript file, summarize with inline buttons."""
     locale = await get_locale_from_message(message)
-    user_id = message.from_user.id
+    from_user = message.from_user
+    if not from_user:
+        return
+    user_id = from_user.id
+    username = from_user.username
     logger.info("YouTube: user_id=%d, url=%s, diarize=%s", user_id, url, diarize)
     if not await _check_free_tier(message, locale):
         return
@@ -96,8 +103,8 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
         await message.answer_document(doc, caption=t("pipelines.youtube.transcript_caption", locale))
 
         # 4. Save to Google Docs if enabled
-        if is_gdocs_enabled(message.from_user.id):
-            await save_to_gdocs(message.from_user.id, message.from_user.username, transcript_text)
+        if is_gdocs_enabled(user_id):
+            await save_to_gdocs(user_id, username, transcript_text)
 
         # 5. Cache transcript for re-summarization
         cleanup_yt_cache()
@@ -136,10 +143,10 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
             pass
         raise
     except ValueError as e:
-        logger.warning("YouTube validation error: user_id=%d, %s", message.from_user.id, e)
+        logger.warning("YouTube validation error: user_id=%d, %s", user_id, e)
         await processing_msg.edit_text(t("pipelines.youtube.validation_error", locale, error=str(e)), reply_markup=None)
     except Exception as e:
-        logger.exception("YouTube processing error: user_id=%d", message.from_user.id)
+        logger.exception("YouTube processing error: user_id=%d", user_id)
         await processing_msg.edit_text(t("pipelines.youtube.processing_error", locale, error=str(e)), reply_markup=None)
     finally:
         if audio_path:
@@ -156,7 +163,10 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
 async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: str):
     """Download audio file → transcribe → (LLM if chat mode) → reply."""
     locale = await get_locale_from_message(message)
-    user_id = message.from_user.id
+    from_user = message.from_user
+    if not from_user:
+        return
+    user_id = from_user.id
     logger.info(
         "Audio: user_id=%d, type=%s, mode=%s, file_id=%s",
         user_id,
@@ -171,9 +181,13 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
     try:
         # 1. Download audio file
         file = await bot.get_file(file_id)
+        file_path = file.file_path
+        if not file_path:
+            await processing_msg.edit_text(t("pipelines.audio.file_not_found", locale), reply_markup=None)
+            return
         with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             tmp_path = tmp.name
-        await bot.download_file(file.file_path, tmp_path)
+        await bot.download_file(file_path, tmp_path)
 
         # 2. Transcribe
         try:
@@ -187,10 +201,10 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
 
         # 3. Save to Google Docs if enabled
         if is_gdocs_enabled(user_id):
-            await save_to_gdocs(user_id, message.from_user.username, user_text)
+            await save_to_gdocs(user_id, from_user.username, user_text)
 
         # 4. Transcribe-only mode — just return the text
-        if get_mode(user_id) == "transcribe":
+        if await get_mode(user_id) == "transcribe":
             await processing_msg.edit_text(user_text, reply_markup=None)
             return
 
@@ -272,38 +286,10 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
         raise
     except Exception as e:
         if "file is too big" in str(e).lower():
-            logger.warning("Audio file too big: user_id=%d, file_id=%s", message.from_user.id, file_id[:20])
+            logger.warning("Audio file too big: user_id=%d, file_id=%s", user_id, file_id[:20])
             await processing_msg.edit_text(t("pipelines.audio.file_too_big", locale), reply_markup=None)
         else:
-            logger.exception("Audio processing error: user_id=%d", message.from_user.id)
+            logger.exception("Audio processing error: user_id=%d", user_id)
             await processing_msg.edit_text(
                 t("pipelines.audio.processing_error", locale, error=str(e)), reply_markup=None
             )
-
-
-async def process_text(message: types.Message):
-    """Send text message to LLM and reply."""
-    locale = get_locale_from_message(message)
-    user_id = message.from_user.id
-    if not await _check_free_tier(message, locale):
-        return
-    processing_msg = await message.answer(t("pipelines.text.thinking", locale), reply_markup=stop_keyboard(locale))
-    try:
-        response = await ask_ollama(user_id, message.text, locale)
-
-        if len(response) > 4000:
-            await processing_msg.delete()
-            for i in range(0, len(response), 4000):
-                await message.answer(response[i : i + 4000])
-        else:
-            await processing_msg.edit_text(response, reply_markup=None)
-
-    except asyncio.CancelledError:
-        try:
-            await processing_msg.edit_text(t("pipelines.text.stopped", locale), reply_markup=None)
-        except Exception:
-            pass
-        raise
-    except Exception as e:
-        logger.exception("Text processing error")
-        await processing_msg.edit_text(t("pipelines.text.error", locale, error=str(e)), reply_markup=None)

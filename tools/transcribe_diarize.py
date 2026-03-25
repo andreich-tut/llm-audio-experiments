@@ -163,7 +163,7 @@ def transcribe_file(
     if max_speakers is not None:
         diarize_kwargs["max_speakers"] = max_speakers
 
-    diarize_model = whisperx.diarize.DiarizationPipeline(
+    diarize_model = whisperx.diarize.DiarizationPipeline(  # pyright: ignore[reportAttributeAccessIssue]
         token=hf_token,
         device=WHISPER_DEVICE,
     )

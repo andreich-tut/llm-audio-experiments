@@ -39,12 +39,12 @@ def _download_yt_sync(url: str, tmp_dir: str, locale: str = DEFAULT_LANGUAGE) ->
         "js_runtimes": {"deno": {}, "node": {}},
         **cookie_opts,
     }
-    with yt_dlp.YoutubeDL(_common_opts) as ydl:
-        info = ydl.extract_info(url, download=False, process=False)
+    with yt_dlp.YoutubeDL(_common_opts) as ydl:  # pyright: ignore[reportArgumentType]
+        info = ydl.extract_info(url, download=False, process=False)  # type: ignore[no-untyped-call]
 
-    duration = info.get("duration") or 0
-    title = info.get("title") or "video"
-    is_live = info.get("is_live", False)
+    duration = int(info.get("duration") or 0)  # type: ignore[union-attr]
+    title = str(info.get("title") or "video")  # type: ignore[union-attr]
+    is_live = bool(info.get("is_live", False))  # type: ignore[union-attr]
 
     if is_live:
         raise ValueError(t("youtube.live_not_supported", locale))
@@ -67,8 +67,8 @@ def _download_yt_sync(url: str, tmp_dir: str, locale: str = DEFAULT_LANGUAGE) ->
             }
         ],
     }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:  # pyright: ignore[reportArgumentType]
+        ydl.download([url])  # type: ignore[no-untyped-call]
 
     # Find the downloaded file
     for f in os.listdir(tmp_dir):
@@ -104,7 +104,7 @@ async def transcribe_diarized(file_path: str) -> str:
     import sys as _sys
 
     _sys.path.insert(0, str(Path(__file__).parent.parent.parent / "tools"))
-    from transcribe_diarize import format_transcript, transcribe_file
+    from transcribe_diarize import format_transcript, transcribe_file  # type: ignore[import-not-found]
 
     loop = asyncio.get_event_loop()
     segments = await loop.run_in_executor(

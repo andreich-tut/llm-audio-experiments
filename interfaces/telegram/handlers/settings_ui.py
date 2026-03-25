@@ -2,11 +2,17 @@
 Settings UI helpers: keyboard builders, text builders, metadata dicts.
 """
 
+from typing import Awaitable, Callable, Tuple
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from application.state import get_user_setting_async, get_user_setting_json_async
 from shared.config import LLM_BASE_URL, LLM_MODEL, OBSIDIAN_INBOX_FOLDER, YANDEX_DISK_PATH
 from shared.i18n import t
+
+# Type aliases for settings handlers
+TextFn = Callable[[int, str], Awaitable[str]]
+KeyboardFn = Callable[..., Awaitable[InlineKeyboardMarkup] | InlineKeyboardMarkup]
 
 # Keys that contain secrets — user's message will be deleted after reading
 _SECRET_KEYS = {"llm_api_key"}
@@ -157,7 +163,7 @@ async def _obsidian_text(user_id: int, locale: str) -> str:
     return f"{t('settings.obsidian_title', locale)}\n\nVault Path: {vault}\nInbox Folder: {inbox}"
 
 
-_SUBMENU_FNS = {
+_SUBMENU_FNS: dict[str, Tuple[TextFn, KeyboardFn]] = {
     "llm": (_llm_text, _llm_kb),
     "yadisk": (_yadisk_text, _yadisk_kb),
     "obsidian": (_obsidian_text, _obsidian_kb),

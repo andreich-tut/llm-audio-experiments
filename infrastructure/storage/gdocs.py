@@ -37,6 +37,9 @@ async def save_to_gdocs(user_id: int, username: str | None, text: str) -> None:
     """Append a timestamped transcription entry to the configured Google Doc."""
     from datetime import datetime, timezone
 
+    if not gdocs_service:
+        return
+
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     display = username or str(user_id)
     entry = f"[{now}] @{display}\n{text}\n\n"
@@ -45,12 +48,12 @@ async def save_to_gdocs(user_id: int, username: str | None, text: str) -> None:
     try:
 
         def _append():
-            doc = gdocs_service.documents().get(documentId=GDOCS_DOCUMENT_ID).execute()
+            doc = gdocs_service.documents().get(documentId=GDOCS_DOCUMENT_ID).execute()  # type: ignore[union-attr]
             end_index = doc["body"]["content"][-1]["endIndex"] - 1
             gdocs_service.documents().batchUpdate(
                 documentId=GDOCS_DOCUMENT_ID,
                 body={"requests": [{"insertText": {"location": {"index": end_index}, "text": entry}}]},
-            ).execute()
+            ).execute()  # type: ignore[union-attr]
 
         await asyncio.wait_for(loop.run_in_executor(None, _append), timeout=15.0)
         logger.info("Saved transcription to Google Docs for user %d", user_id)
