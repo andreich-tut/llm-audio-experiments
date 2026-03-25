@@ -33,3 +33,4 @@ tests/
 test/
 www.youtube.com_cookies.txt
 .qwen/
+webapp/node_modules
