@@ -2,17 +2,18 @@
 OAuth login/disconnect callbacks for Yandex.Disk settings.
 """
 
+import time
 import uuid
 
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.methods import GetMe
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 
 from application.state import delete_oauth_token_async
 from infrastructure.external_api.yandex_client import get_oauth_url
 from interfaces.telegram.handlers.settings_ui import _yadisk_kb, _yadisk_text
-from shared.config import YANDEX_OAUTH_CLIENT_ID, logger
+from interfaces.webapp.routes.oauth import _oauth_states
+from shared.config import DOMAIN, YANDEX_OAUTH_CLIENT_ID, logger
 from shared.i18n import t
 from shared.utils import get_locale_from_callback
 
@@ -23,24 +24,16 @@ router = Router(name="settings_oauth")
 async def cb_oauth_login(callback: CallbackQuery, state: FSMContext):
     locale = await get_locale_from_callback(callback)
 
-    if not YANDEX_OAUTH_CLIENT_ID:
+    if not YANDEX_OAUTH_CLIENT_ID or not DOMAIN:
         await callback.answer(t("settings.oauth.not_configured", locale), show_alert=True)
         return
 
+    user_id = callback.from_user.id
     state_value = uuid.uuid4().hex[:16]
     await state.update_data(oauth_state=state_value)
+    _oauth_states[state_value] = (user_id, time.monotonic())
 
-    if not callback.bot:
-        await callback.answer(t("settings.oauth.not_configured", locale), show_alert=True)
-        return
-
-    bot_info = await callback.bot(GetMe())
-    bot_username = bot_info.username
-    if not bot_username:
-        await callback.answer(t("settings.oauth.not_configured", locale), show_alert=True)
-        return
-
-    redirect_uri = f"https://t.me/{bot_username}"
+    redirect_uri = f"https://{DOMAIN}/api/v1/oauth/yandex/callback"
     oauth_url = get_oauth_url(state_value, redirect_uri)
 
     await callback.answer()
