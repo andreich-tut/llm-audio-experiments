@@ -128,7 +128,6 @@ async def main():
         host="0.0.0.0",
         port=WEBAPP_PORT,
         log_config=None,  # Inherit bot's rotating file logging
-        install_signal_handlers=False,  # Prevent signal clashes with aiogram
     )
     server = uvicorn.Server(config)
 
