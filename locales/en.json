@@ -143,6 +143,7 @@
       "speakers_need_token": "⚠️ HF_TOKEN required in .env for speaker diarization. Transcribing without speakers..."
     },
     "audio": {
+      "warp_reconnecting": "🔄 Reconnecting proxy, please wait...",
       "transcribing": "🎙 Transcribing voice...",
       "no_speech": "🤷 Could not recognize speech. Try again.",
       "formatting_note": "📓 Formatting note...",

@@ -46,17 +46,24 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
         duration_min = duration // 60
         await processing_msg.edit_text(t("pipelines.youtube.transcribing", locale, title=title, duration=duration_min))
 
+        async def _on_status(status: str):
+            if status == "warp_reconnecting":
+                try:
+                    await processing_msg.edit_text(t("pipelines.audio.warp_reconnecting", locale))
+                except Exception:
+                    pass
+
         if diarize:
             if not HF_TOKEN:
                 await processing_msg.edit_text(t("pipelines.youtube.speakers_need_token", locale))
-                transcript_text = await transcribe(audio_path)
+                transcript_text = await transcribe(audio_path, status_callback=_on_status)
             else:
                 await processing_msg.edit_text(
                     t("pipelines.youtube.transcribing_with_speakers", locale, title=title, duration=duration_min)
                 )
                 transcript_text = await transcribe_diarized(audio_path)
         else:
-            transcript_text = await transcribe(audio_path)
+            transcript_text = await transcribe(audio_path, status_callback=_on_status)
 
         if not transcript_text.strip():
             await processing_msg.edit_text(t("pipelines.youtube.no_speech", locale), reply_markup=None)

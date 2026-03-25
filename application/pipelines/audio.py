@@ -80,17 +80,24 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
         await processing_msg.edit_text(t("pipelines.youtube.transcribing", locale, title=title, duration=duration_min))
 
         # 2. Transcribe
+        async def _on_yt_status(status: str):
+            if status == "warp_reconnecting":
+                try:
+                    await processing_msg.edit_text(t("pipelines.audio.warp_reconnecting", locale))
+                except Exception:
+                    pass
+
         if diarize:
             if not HF_TOKEN:
                 await processing_msg.edit_text(t("pipelines.youtube.speakers_need_token", locale))
-                transcript_text = await transcribe(audio_path)
+                transcript_text = await transcribe(audio_path, status_callback=_on_yt_status)
             else:
                 await processing_msg.edit_text(
                     t("pipelines.youtube.transcribing_with_speakers", locale, title=title, duration=duration_min)
                 )
                 transcript_text = await transcribe_diarized(audio_path)
         else:
-            transcript_text = await transcribe(audio_path)
+            transcript_text = await transcribe(audio_path, status_callback=_on_yt_status)
 
         if not transcript_text.strip():
             await processing_msg.edit_text(t("pipelines.youtube.no_speech", locale), reply_markup=None)
@@ -190,8 +197,15 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
         await bot.download_file(file_path, tmp_path)
 
         # 2. Transcribe
+        async def _on_status(status: str):
+            if status == "warp_reconnecting":
+                try:
+                    await processing_msg.edit_text(t("pipelines.audio.warp_reconnecting", locale))
+                except Exception:
+                    pass
+
         try:
-            user_text = await transcribe(tmp_path)
+            user_text = await transcribe(tmp_path, status_callback=_on_status)
         finally:
             os.unlink(tmp_path)
 
