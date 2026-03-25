@@ -1,0 +1,13 @@
+{$DOMAIN:localhost} {
+    # Proxy API calls to FastAPI backend
+    handle /api/* {
+        reverse_proxy api:8080
+    }
+
+    # Serve React SPA — all other paths return index.html
+    handle {
+        root * /srv/webapp
+        try_files {path} /index.html
+        file_server
+    }
+}

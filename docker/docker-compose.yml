@@ -1,0 +1,50 @@
+services:
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+    env_file:
+      - ../.env
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    restart: unless-stopped
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+    env_file:
+      - ../.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - bot
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ../Caddyfile:/etc/caddy/Caddyfile
+      - ../webapp/dist:/srv/webapp
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  caddy_data:
+  caddy_config:
