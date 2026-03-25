@@ -14,7 +14,7 @@ export default function SettingsPage() {
     <T,>(fn: () => Promise<T>) =>
     async () => {
       haptic?.impactOccurred('light')
-      return fn()
+      await fn()
     }
 
   if (isLoading) return <div className="loading">Loading settings…</div>
