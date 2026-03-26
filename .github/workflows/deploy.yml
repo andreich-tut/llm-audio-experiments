@@ -34,6 +34,6 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /home/dev/tg-audio-describer-bot
+            cd /home/botuser/tg-audio-describer-bot
             git pull origin main
             ./docker/update.sh
