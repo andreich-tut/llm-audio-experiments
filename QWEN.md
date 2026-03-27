@@ -7,9 +7,10 @@ This file provides guidance to Qwen Code when working with code in this reposito
 **Telegram Voice/Audio Bot**: A Telegram bot that processes voice messages, audio files, and YouTube links via Whisper STT and generates responses using any OpenAI-compatible LLM API (default: OpenRouter).
 
 - **Stack**: Python 3.11+, aiogram 3, faster-whisper (local) or Groq (cloud) for STT, OpenAI SDK for LLM
-- **Architecture**: Async event-driven (asyncio), SQLite database with encryption for persistence, Docker deployment with Cloudflare WARP
+- **Architecture**: Async event-driven (asyncio), SQLite database with encryption for persistence, Docker deployment with Caddy HTTPS
 - **Language**: Bilingual UI (Russian/English), per-user language setting
 - **Persistence**: SQLite database (`data/bot.db`) with Fernet-encrypted sensitive data (OAuth tokens, API keys)
+- **Mini App**: Telegram Web App for settings UI (React + Vite frontend, Python SSE backend)
 
 ## Architecture
 
@@ -24,6 +25,7 @@ User sends voice/audio → bot downloads file → Whisper transcribes (local GPU
 ### Project Structure
 ```
 bot.py              — Entrypoint: creates Bot/Dispatcher, registers routers, starts polling
+app_runner.py       — Mini App backend: SSE events, OAuth sync, API endpoints
 shared/
   config.py         — Env loading, constants, logging (rotating file + console), access control
   i18n.py           — Internationalization: t(), get_user_locale(), detect_language_from_telegram()
@@ -72,10 +74,12 @@ interfaces/telegram/
     settings_ui.py  — Settings keyboard/text builders, key metadata
     settings_oauth.py — OAuth login/disconnect callbacks for Yandex.Disk
     oauth_callback.py — OAuth deep-link handler: /start oauth_<code>_<state>
+  middlewares/      — Request middlewares (i18n, user tracking)
 prompts/            — System prompts for LLM (chat, summary, note formatting)
 locales/            — UI strings: ru.json, en.json
 tools/              — CLI utilities: audio splitting, transcription, diarization
-docker/             — Dockerfile, entrypoint, start/update scripts
+docker/             — Dockerfile, entrypoint, start/update scripts, docker-compose.yml
+webapp/             — Mini App: React + Vite frontend, Python SSE backend
 docs/               — Design docs and migration notes (not part of runtime)
 ```
 
@@ -88,6 +92,7 @@ docs/               — Design docs and migration notes (not part of runtime)
 - **Rate limiting**: LLM calls retry with exponential backoff (5s/15s/30s) on RateLimitError
 - **i18n**: All UI strings in `locales/{ru,en}.json`, accessed via `shared.i18n.t(key, locale)`
 - **Linting**: Ruff via pre-commit hooks, line-length 120. Pylint via `.pylintrc`.
+- **Mini App SSE**: Server-Sent Events for real-time OAuth status sync via Redis pub/sub
 
 See [PROJECT.md](docs/ai-context/PROJECT.md) for: configuration (.env), setup, running, Docker, CI/CD, bot commands, dependencies.
 

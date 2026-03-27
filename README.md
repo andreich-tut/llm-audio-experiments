@@ -93,22 +93,66 @@ ln -s $(pwd)/skills .qwen/skills
 All settings via `.env` (template: `.env.example`):
 
 ```
+# ──────────────────────────────────────────────
+# Telegram
+# ──────────────────────────────────────────────
 BOT_TOKEN=                    # required
+ALLOWED_USERS=                # comma-separated Telegram user IDs (empty = allow all)
+
+# ──────────────────────────────────────────────
+# LLM (OpenRouter or any OpenAI-compatible API)
+# ──────────────────────────────────────────────
 LLM_API_KEY=                  # required — OpenRouter key or other provider
 LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL=qwen/qwen3-235b-a22b:free
+LLM_MODEL=                    # e.g., nvidia/nemotron-3-super-120b-a12b:free
 
-WHISPER_BACKEND=local         # "local" or "groq"
-WHISPER_MODEL=medium          # tiny / small / medium / large-v3 (local only)
+# ──────────────────────────────────────────────
+# Whisper (STT)
+# ──────────────────────────────────────────────
+WHISPER_BACKEND=local         # "local" (faster-whisper) or "groq" (cloud)
+WHISPER_MODEL=large-v3        # tiny / small / medium / large-v3 (local only)
 WHISPER_DEVICE=cuda           # cuda or cpu (local only)
 GROQ_API_KEY=                 # required when WHISPER_BACKEND=groq
+
+# ──────────────────────────────────────────────
+# YouTube transcription
+# ──────────────────────────────────────────────
+YT_MAX_DURATION=7200          # max video duration in seconds (default: 2 hours)
+YT_COOKIES_FILE=              # path to cookies.txt for yt-dlp (if YouTube blocks downloads)
 HF_TOKEN=                     # required for speaker diarization (YouTube + CLI)
 
-ALLOWED_USERS=                # comma-separated Telegram user IDs (empty = allow all)
-DEFAULT_LANGUAGE=ru           # default bot language: "ru" or "en"
-SYSTEM_PROMPT=                # optional: override the default system prompt
+# ──────────────────────────────────────────────
+# Yandex.Disk OAuth (for Obsidian vault sync)
+# ──────────────────────────────────────────────
+YANDEX_OAUTH_CLIENT_ID=       # OAuth app ID from https://oauth.yandex.ru/client/new
+YANDEX_OAUTH_CLIENT_SECRET=   # OAuth app secret
+YANDEX_DISK_PATH=             # folder path on Yandex.Disk (e.g., dev/hh-knowledge)
+
+# ──────────────────────────────────────────────
+# Obsidian vault (local path alternative)
+# ──────────────────────────────────────────────
+OBSIDIAN_VAULT_PATH=          # local vault path (e.g., /home/user/YandexDisk/ObsidianVault)
+OBSIDIAN_INBOX_FOLDER=Inbox   # subfolder for notes
+
+# ──────────────────────────────────────────────
+# Google Docs (optional)
+# ──────────────────────────────────────────────
+GDOCS_CREDENTIALS_FILE=       # path to service-account.json
+GDOCS_DOCUMENT_ID=            # Google Doc ID from URL
+
+# ──────────────────────────────────────────────
+# System & Security
+# ──────────────────────────────────────────────
+SYSTEM_PROMPT=prompts/system.md
+ENCRYPTION_KEY=               # recommended: master key for encrypted data
 WARP_DEBUG=0                  # set to 1 to enable Cloudflare WARP verbose logs
-ENCRYPTION_KEY=               # recommended: master key for encrypted data (see persistence.md)
+
+# ──────────────────────────────────────────────
+# Mini App Web API (docker-compose deployment)
+# ──────────────────────────────────────────────
+DOMAIN=                       # your domain for Mini App (e.g., anywebstorage.ru)
+WEBAPP_URL=                   # public URL for TMA (e.g., https://anywebstorage.ru)
+REDIS_URL=redis://localhost:6379/0  # Redis connection for pub/sub (SSE OAuth sync)
 ```
 
 ### Docker Data Persistence
@@ -128,6 +172,7 @@ See [persistence.md](docs/persistence.md) for backup strategies and migration gu
 | OpenRouter | `https://openrouter.ai/api/v1`       | Default; many free models         |
 | Ollama     | `http://localhost:11434/v1`          | Local; set `LLM_API_KEY=ollama`   |
 | DashScope  | `https://dashscope.aliyuncs.com/compatible-mode/v1` | Alibaba Cloud |
+| NVIDIA     | `https://integrate.api.nvidia.com/v1` | NVIDIA NIM models               |
 | Any other  | your endpoint                        | Must be OpenAI-compatible         |
 
 ### Whisper STT
@@ -147,21 +192,22 @@ For YouTube speaker diarization, add `HF_TOKEN=` (free [HuggingFace](https://hug
 
 In note mode, the bot formats voice as a structured Markdown note and can save it automatically.
 
-**Option 1 — Local path** (via Yandex.Disk or any sync client):
+**Option 1 — Yandex.Disk OAuth** (recommended — no sync client needed):
+```
+YANDEX_OAUTH_CLIENT_ID=your_oauth_app_id
+YANDEX_OAUTH_CLIENT_SECRET=your_oauth_secret
+YANDEX_DISK_PATH=dev/hh-knowledge      # folder on Yandex.Disk
+OBSIDIAN_INBOX_FOLDER=Inbox
+```
+Users authenticate via OAuth button in `/settings`. Notes are saved to `disk:/dev/hh-knowledge/Inbox/YYYY-MM-DD-title.md`.
+
+**Option 2 — Local path** (via Yandex.Disk or any sync client):
 ```
 OBSIDIAN_VAULT_PATH=/home/user/YandexDisk/ObsidianVault
 OBSIDIAN_INBOX_FOLDER=Inbox
 ```
 
-**Option 2 — Yandex.Disk WebDAV** (direct cloud upload, no sync client needed):
-```
-YANDEX_DISK_LOGIN=yourname@yandex.ru
-YANDEX_DISK_PASSWORD=your_app_password   # create at id.yandex.ru/security/app-passwords
-YANDEX_DISK_PATH=ObsidianVault
-OBSIDIAN_INBOX_FOLDER=Inbox
-```
-
-WebDAV takes priority if both are set. Notes are saved as `YYYY-MM-DD-title.md` with YAML front-matter.
+Notes are saved as `YYYY-MM-DD-title.md` with YAML front-matter.
 
 ## Google Docs (optional)
 
@@ -279,21 +325,29 @@ The bot includes a web-based settings UI accessible as a Telegram Mini App.
    cd webapp && npm install && npm run build
    ```
 
-2. **Setup HTTPS** with Cloudflare Tunnel (free SSL):
-   - See [docs/MINIAPP-HTTPS-CHECKLIST.md](docs/MINIAPP-HTTPS-CHECKLIST.md)
-   - Or full guide: [docs/cloudflare-tunnel-setup.md](docs/cloudflare-tunnel-setup.md)
-
-3. **Set Mini App URL** in bot:
+2. **Configure domain** in `.env`:
    ```
-   /setmenu https://miniapp.yourdomain.com
+   DOMAIN=yourdomain.com
+   WEBAPP_URL=https://yourdomain.com
+   REDIS_URL=redis://localhost:6379/0
    ```
 
-4. **Open bot** → Click "Settings" button in menu
+3. **Deploy with Docker Compose** (includes Caddy for HTTPS):
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Set Mini App URL** in bot:
+   ```
+   /setmenu https://yourdomain.com
+   ```
+
+5. **Open bot** → Click "Settings" button in menu
 
 ### Features
 
 - Configure LLM API credentials
-- Yandex.Disk OAuth integration
+- Yandex.Disk OAuth integration (users authenticate via button)
 - Obsidian vault settings
 - Real-time connection status
 
