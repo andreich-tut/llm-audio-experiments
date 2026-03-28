@@ -13,7 +13,6 @@
       "model": "/model — текущая модель",
       "ping": "/ping — проверить LLM API",
       "limits": "/limits — лимиты бесплатных API",
-      "savedoc": "/savedoc — сохранять расшифровки в Google Docs",
       "lang": "/lang — изменить язык",
       "settings": "/settings — личные настройки API и хранилища"
     },
@@ -38,11 +37,6 @@
     "model": {
       "llm_model": "🤖 Модель: `{llm_model}`",
       "whisper_model": "🎙 Whisper: `{whisper_model}`"
-    },
-    "savedoc": {
-      "not_configured": "❌ Google Docs не настроен.\nДобавь GDOCS_CREDENTIALS_FILE и GDOCS_DOCUMENT_ID в .env и перезапусти бота.",
-      "enabled": "📄 Сохранение в Google Docs включено.\nРасшифровки будут добавляться в документ: {document_url}",
-      "disabled": "🔇 Сохранение в Google Docs выключено."
     },
     "settings": {
       "menu_title": "⚙️ Настройки\n\nНастройте личные ключи API и параметры хранилища. Ваши настройки перекрывают глобальные значения из .env.",

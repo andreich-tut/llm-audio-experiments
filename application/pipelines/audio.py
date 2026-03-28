@@ -27,7 +27,6 @@ from application.state import (
 from infrastructure.external_api.groq_client import transcribe
 from infrastructure.external_api.llm_client import ask_ollama, format_note_ollama, summarize_ollama
 from infrastructure.external_api.youtube import download_yt_audio, transcribe_diarized
-from infrastructure.storage.gdocs import is_gdocs_enabled, save_to_gdocs
 from infrastructure.storage.obsidian import is_obsidian_enabled, save_note
 from shared.config import ALLOWED_USER_IDS, HF_TOKEN, logger
 from shared.i18n import t
@@ -64,7 +63,6 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
     if not from_user:
         return
     user_id = from_user.id
-    username = from_user.username
     logger.info("YouTube: user_id=%d, url=%s, diarize=%s", user_id, url, diarize)
     if not await _check_free_tier(message, locale):
         return
@@ -109,11 +107,7 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
         doc = BufferedInputFile(transcript_bytes, filename=f"{safe_title}.txt")
         await message.answer_document(doc, caption=t("pipelines.youtube.transcript_caption", locale))
 
-        # 4. Save to Google Docs if enabled
-        if is_gdocs_enabled(user_id):
-            await save_to_gdocs(user_id, username, transcript_text)
-
-        # 5. Cache transcript for re-summarization
+        # 4. Cache transcript for re-summarization
         cleanup_yt_cache()
         cache_key = uuid.uuid4().hex[:8]
         yt_transcripts[cache_key] = {
@@ -213,11 +207,7 @@ async def process_audio(message: types.Message, bot: Bot, file_id: str, suffix: 
             await processing_msg.edit_text(t("pipelines.audio.no_speech", locale), reply_markup=None)
             return
 
-        # 3. Save to Google Docs if enabled
-        if is_gdocs_enabled(user_id):
-            await save_to_gdocs(user_id, from_user.username, user_text)
-
-        # 4. Transcribe-only mode — just return the text
+        # 3. Transcribe-only mode — just return the text
         if await get_mode(user_id) == "transcribe":
             await processing_msg.edit_text(user_text, reply_markup=None)
             return

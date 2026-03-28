@@ -56,7 +56,6 @@ logger = logging.getLogger(__name__)
 
 active_tasks: Dict[int, asyncio.Task] = {}
 yt_transcripts: Dict[str, dict] = {}
-user_gdocs: Dict[int, bool] = {}
 user_modes: Dict[int, str] = {}
 groq_limits: dict = {}
 

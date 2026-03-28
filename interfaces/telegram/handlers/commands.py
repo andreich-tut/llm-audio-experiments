@@ -1,5 +1,5 @@
 """
-Core command handlers: /start, /mode, /clear, /model, /savedoc, /stop
+Core command handlers: /start, /mode, /clear, /model, /stop
 Callback handlers: mode:*, cancel
 """
 
@@ -13,13 +13,10 @@ from application.state import (
     clear_history,
     get_history,
     get_mode,
-    user_gdocs,
     user_modes,
 )
 from infrastructure.database.database import get_db
-from infrastructure.storage.gdocs import gdocs_service
 from shared.config import (
-    GDOCS_DOCUMENT_ID,
     LLM_MODEL,
     WHISPER_MODEL,
     is_allowed,
@@ -46,7 +43,6 @@ async def cmd_start(message: types.Message):
     logger.info("/start from user_id=%d (@%s)", from_user.id, from_user.username)
     if not is_allowed(from_user.id):
         return
-    gdocs_line = "\n" + t("commands.start.savedoc", locale) if gdocs_service else ""
     await message.answer(
         t("commands.start.greeting", locale, version=__version__)
         + "\n\n"
@@ -74,8 +70,7 @@ async def cmd_start(message: types.Message):
         + "\n"
         + t("commands.start.lang", locale)
         + "\n"
-        + t("commands.start.settings", locale)
-        + gdocs_line,
+        + t("commands.start.settings", locale),
     )
 
 
@@ -196,27 +191,6 @@ async def cmd_model(message: types.Message):
         + t("commands.model.whisper_model", locale, whisper_model=WHISPER_MODEL),
         parse_mode=ParseMode.MARKDOWN,
     )
-
-
-@router.message(Command("savedoc"))
-async def cmd_savedoc(message: types.Message):
-    locale = await get_locale_from_message(message)
-    from_user = message.from_user
-    if not from_user:
-        return
-    logger.info("/savedoc from user_id=%d", from_user.id)
-    if not is_allowed(from_user.id):
-        return
-    if gdocs_service is None:
-        await message.answer(t("commands.savedoc.not_configured", locale))
-        return
-    enabled = not user_gdocs.get(from_user.id, False)
-    user_gdocs[from_user.id] = enabled
-    if enabled:
-        document_url = f"https://docs.google.com/document/d/{GDOCS_DOCUMENT_ID}/edit"
-        await message.answer(t("commands.savedoc.enabled", locale, document_url=document_url))
-    else:
-        await message.answer(t("commands.savedoc.disabled", locale))
 
 
 @router.message(Command("stop"))

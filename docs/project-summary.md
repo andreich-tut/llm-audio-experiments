@@ -34,7 +34,7 @@ The system is a Python Telegram bot that transcribes voice/audio messages and pr
 
 - **`interfaces/telegram/handlers/messages.py`** — Routing hub: handles voice, audio, video note, document, video, and text messages, delegating each to the right pipeline.
 
-- **`application/pipelines/audio.py`** — Most complex pipeline: coordinates download, transcription, mode branching, note formatting, and optional Obsidian/GDocs save.
+- **`application/pipelines/audio.py`** — Most complex pipeline: coordinates download, transcription, mode branching, and note formatting with optional Obsidian save.
 
 - **`infrastructure/external_api/groq_client.py`** — Transcription engine: abstracts local Whisper vs. Groq API behind a single `transcribe()` function with a status_callback for live progress updates.
 

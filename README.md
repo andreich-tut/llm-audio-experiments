@@ -135,12 +135,6 @@ OBSIDIAN_VAULT_PATH=          # local vault path (e.g., /home/user/YandexDisk/Ob
 OBSIDIAN_INBOX_FOLDER=Inbox   # subfolder for notes
 
 # ──────────────────────────────────────────────
-# Google Docs (optional)
-# ──────────────────────────────────────────────
-GDOCS_CREDENTIALS_FILE=       # path to service-account.json
-GDOCS_DOCUMENT_ID=            # Google Doc ID from URL
-
-# ──────────────────────────────────────────────
 # System & Security
 # ──────────────────────────────────────────────
 SYSTEM_PROMPT=prompts/system.md
@@ -208,22 +202,6 @@ OBSIDIAN_INBOX_FOLDER=Inbox
 ```
 
 Notes are saved as `YYYY-MM-DD-title.md` with YAML front-matter.
-
-## Google Docs (optional)
-
-Save voice transcripts to a Google Doc automatically.
-
-1. Create a service account in [Google Cloud Console](https://console.cloud.google.com/) → IAM & Admin → Service Accounts → Create; download the JSON key
-2. Enable the Google Docs API in your project
-3. Share the target document with the service account email (Editor role)
-4. Copy the document ID from the URL: `.../document/d/<ID>/edit`
-5. Add to `.env`:
-   ```
-   GDOCS_CREDENTIALS_FILE=/path/to/service-account.json
-   GDOCS_DOCUMENT_ID=your_document_id
-   ```
-
-Use `/savedoc` in the bot to toggle saving on/off per user.
 
 ## Security
 

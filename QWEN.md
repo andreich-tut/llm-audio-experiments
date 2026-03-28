@@ -63,10 +63,9 @@ infrastructure/
     yandex_client.py — Yandex OAuth 2.0 flow for Yandex.Disk access
   storage/
     obsidian.py     — Obsidian note saving: local vault or Yandex.Disk WebDAV (OAuth)
-    gdocs.py        — Google Docs integration (optional)
 interfaces/telegram/
   handlers/
-    commands.py     — /start, /mode, /stop, /clear, /model, /savedoc + mode/cancel callbacks
+    commands.py     — /start, /mode, /stop, /clear, /model + mode/cancel callbacks
     diagnostics.py  — /ping, /limits, /lang + lang callback
     messages.py     — Message type handlers: voice, audio, video_note, document, video, text
     youtube_callbacks.py — YouTube summary detail-level inline button handlers

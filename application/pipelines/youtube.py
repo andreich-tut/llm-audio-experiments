@@ -18,7 +18,6 @@ from application.state import cleanup_yt_cache, yt_transcripts
 from infrastructure.external_api.groq_client import transcribe
 from infrastructure.external_api.llm_client import summarize_ollama
 from infrastructure.external_api.youtube import download_yt_audio, transcribe_diarized
-from infrastructure.storage.gdocs import is_gdocs_enabled, save_to_gdocs
 from shared.config import HF_TOKEN, logger
 from shared.i18n import t
 from shared.keyboards import stop_keyboard, yt_summary_keyboard
@@ -32,7 +31,6 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
     if not from_user:
         return
     user_id = from_user.id
-    username = from_user.username
     logger.info("YouTube: user_id=%d, url=%s, diarize=%s", user_id, url, diarize)
     if not await _check_free_tier(message, locale):
         return
@@ -73,9 +71,6 @@ async def process_youtube(message: types.Message, url: str, diarize: bool):
         safe_title = re.sub(r"[^\w\s-]", "", title)[:50].strip() or "transcript"
         doc = BufferedInputFile(transcript_bytes, filename=f"{safe_title}.txt")
         await message.answer_document(doc, caption=t("pipelines.youtube.transcript_caption", locale))
-
-        if is_gdocs_enabled(user_id):
-            await save_to_gdocs(user_id, username, transcript_text)
 
         cleanup_yt_cache()
         cache_key = uuid.uuid4().hex[:8]

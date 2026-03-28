@@ -62,10 +62,9 @@ infrastructure/
   redis_client.py   — Redis connection singleton with retry logic, pub/sub for SSE
   storage/
     obsidian.py     — Obsidian note saving: local vault or Yandex.Disk WebDAV (OAuth)
-    gdocs.py        — Google Docs integration (optional)
 interfaces/telegram/
   handlers/
-    commands.py     — /start, /mode, /stop, /clear, /model, /savedoc + mode/cancel callbacks
+    commands.py     — /start, /mode, /stop, /clear, /model + mode/cancel callbacks
     diagnostics.py  — /ping, /limits, /lang + lang callback
     messages.py     — Message type handlers: voice, audio, video_note, document, video, text
     youtube_callbacks.py — YouTube summary detail-level inline button handlers
@@ -119,10 +118,6 @@ GROQ_API_KEY=                     # Required when WHISPER_BACKEND=groq
 
 # System prompt
 SYSTEM_PROMPT=prompts/system.md
-
-# Google Docs (optional)
-GDOCS_CREDENTIALS_FILE=
-GDOCS_DOCUMENT_ID=
 
 # Obsidian (optional)
 OBSIDIAN_VAULT_PATH=

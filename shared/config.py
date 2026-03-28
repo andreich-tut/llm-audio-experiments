@@ -58,12 +58,6 @@ WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cuda")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 # ──────────────────────────────────────────────
-# Google Docs (optional)
-# ──────────────────────────────────────────────
-GDOCS_CREDENTIALS_FILE = os.getenv("GDOCS_CREDENTIALS_FILE", "")
-GDOCS_DOCUMENT_ID = os.getenv("GDOCS_DOCUMENT_ID", "")
-
-# ──────────────────────────────────────────────
 # Obsidian vault (optional)
 # ──────────────────────────────────────────────
 OBSIDIAN_VAULT_PATH = os.getenv("OBSIDIAN_VAULT_PATH", "")

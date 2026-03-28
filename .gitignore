@@ -46,3 +46,4 @@ docs/repomix-*.txt
 
 # macOS
 .DS_Store
+docs/plans/**.*

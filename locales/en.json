@@ -13,7 +13,6 @@
       "model": "/model — current model",
       "ping": "/ping — check LLM API",
       "limits": "/limits — free API limits",
-      "savedoc": "/savedoc — save transcripts to Google Docs",
       "lang": "/lang — change language",
       "settings": "/settings — personal API and storage settings"
     },
@@ -38,11 +37,6 @@
     "model": {
       "llm_model": "🤖 Model: `{llm_model}`",
       "whisper_model": "🎙 Whisper: `{whisper_model}`"
-    },
-    "savedoc": {
-      "not_configured": "❌ Google Docs not configured.\nAdd GDOCS_CREDENTIALS_FILE and GDOCS_DOCUMENT_ID to .env and restart the bot.",
-      "enabled": "📄 Google Docs saving enabled.\nTranscripts will be added to: {document_url}",
-      "disabled": "🔇 Google Docs saving disabled."
     },
     "settings": {
       "menu_title": "⚙️ Settings\n\nConfigure your personal API credentials and storage. Your settings override the global .env defaults.",

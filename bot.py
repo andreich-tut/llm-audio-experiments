@@ -16,7 +16,6 @@ from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
 
 from application.state import initialize_state, shutdown_state
 from infrastructure.database.database import get_db
-from infrastructure.storage.gdocs import gdocs_service
 from interfaces.telegram.handlers.commands import router as commands_router
 from interfaces.telegram.handlers.diagnostics import router as diagnostics_router
 from interfaces.telegram.handlers.menu_button import router as menu_button_router
@@ -82,12 +81,11 @@ async def main():
     await initialize_state()
 
     logger.info(
-        "Starting bot... Model: %s, Whisper: %s (%s), Allowed users: %s, GDocs: %s",
+        "Starting bot... Model: %s, Whisper: %s (%s), Allowed users: %s",
         LLM_MODEL,
         WHISPER_MODEL,
         WHISPER_DEVICE,
         ALLOWED_USER_IDS or "all",
-        "enabled" if gdocs_service else "disabled",
     )
     locale = DEFAULT_LANGUAGE
     commands = [
@@ -128,13 +126,6 @@ async def main():
             description=t("commands.start.greeting", locale).split("!")[0],
         ),
     ]
-    if gdocs_service:
-        commands.append(
-            BotCommand(
-                command="savedoc",
-                description=t("commands.start.savedoc", locale).split(" — ")[0].replace("/", ""),
-            )
-        )
     try:
         await bot.set_my_commands(commands)
     except Exception as e:
