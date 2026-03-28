@@ -41,5 +41,8 @@ webapp/.vite/
 # Obsidian vault (exported planning docs)
 obsidian-vault/
 
+# Repomix auto-generated snapshots
+docs/repomix-*.txt
+
 # macOS
 .DS_Store
