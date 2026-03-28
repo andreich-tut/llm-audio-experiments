@@ -105,7 +105,7 @@ sequenceDiagram
 
 **Per-user LLM client caching**: `llm_client.py` caches `AsyncOpenAI` instances keyed on `(api_key, base_url)` — users can bring their own OpenRouter/Ollama endpoint without paying the client-init overhead on every message.
 
-**Cloudflare WARP as egress proxy**: The Docker entrypoint boots `warp-svc` before starting the bot, using WARP's SOCKS proxy to route Groq API calls. This sidesteps geographic API restrictions at the infra level.
+**Direct network access**: The bot connects directly to external APIs (Telegram, Groq, OpenRouter) via the host's primary network interface without an internal proxy layer.
 
 **Free tier with shared credentials**: `can_use_shared_credentials()` in `state.py` gates users without a personal API key to 3 free uses, after which they must supply their own key via the Mini App settings.
 

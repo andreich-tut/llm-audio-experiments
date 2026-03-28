@@ -2,14 +2,7 @@ FROM python:3.12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y ffmpeg curl gpg dbus redis-tools && rm -rf /var/lib/apt/lists/*
-
-RUN curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg \
-      | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ bookworm main" \
-      > /etc/apt/sources.list.d/cloudflare-client.list && \
-    apt-get update && apt-get install -y cloudflare-warp && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ffmpeg curl redis-tools && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

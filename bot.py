@@ -10,7 +10,6 @@ Also works with regular text messages.
 import asyncio
 
 from aiogram import Bot, Dispatcher
-from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
 
@@ -30,7 +29,6 @@ from shared.config import (
     BOT_TOKEN,
     DEFAULT_LANGUAGE,
     LLM_MODEL,
-    WARP_PROXY,
     WEBAPP_PORT,
     WEBAPP_URL,
     WHISPER_DEVICE,
@@ -39,9 +37,8 @@ from shared.config import (
 )
 from shared.i18n import t
 
-# Telegram Bot with WARP proxy
-session = AiohttpSession(proxy=WARP_PROXY if WARP_PROXY else None) if WARP_PROXY else None
-bot = Bot(token=BOT_TOKEN, session=session)
+# Telegram Bot
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
 

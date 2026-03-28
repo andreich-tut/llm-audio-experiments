@@ -139,7 +139,6 @@ OBSIDIAN_INBOX_FOLDER=Inbox   # subfolder for notes
 # ──────────────────────────────────────────────
 SYSTEM_PROMPT=prompts/system.md
 ENCRYPTION_KEY=               # recommended: master key for encrypted data
-WARP_DEBUG=0                  # set to 1 to enable Cloudflare WARP verbose logs
 
 # ──────────────────────────────────────────────
 # Mini App Web API (docker-compose deployment)

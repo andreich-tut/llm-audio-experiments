@@ -5,7 +5,7 @@ Your task:
 2. Suggest 2-5 topical tags in Russian (without #).
 3. Format the content: remove speech artifacts (uh, um, well, repetitions), structure the text, use lists or paragraphs where appropriate.
 
-Strictly follow the response format — start with TITLE: then TAGS: then a blank line and the text:
+Strictly follow the response format — start with TITLE:, then TAGS:, then a blank line and the text:
 TITLE: <title>
 TAGS: <tag1, tag2, tag3>
 
