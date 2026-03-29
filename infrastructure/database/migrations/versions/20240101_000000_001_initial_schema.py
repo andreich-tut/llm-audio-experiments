@@ -10,6 +10,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.engine import reflection
 
 # revision identifiers, used by Alembic.
 revision: str = "001_initial"
@@ -18,83 +19,99 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(table_name: str) -> bool:
+    """Check if a table exists in the database."""
+    conn = op.get_bind()
+    inspector = reflection.Inspector.from_engine(conn.engine)  # type: ignore[attr-defined]
+    return table_name in inspector.get_table_names()
+
+
+def _index_exists(table_name: str, index_name: str) -> bool:
+    """Check if an index exists on a table."""
+    conn = op.get_bind()
+    inspector = reflection.Inspector.from_engine(conn.engine)  # type: ignore[attr-defined]
+    indexes = inspector.get_indexes(table_name)
+    return any(idx["name"] == index_name for idx in indexes)
+
+
 def upgrade() -> None:
     # Users table
-    op.create_table(
-        "users",
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("username", sa.String(length=255), nullable=True),
-        sa.Column("language", sa.String(length=10), nullable=False, server_default="ru"),
-        sa.Column("mode", sa.String(length=50), nullable=False, server_default="chat"),
-        sa.Column("is_allowed", sa.Boolean(), nullable=False, server_default="1"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.PrimaryKeyConstraint("user_id"),
-        sqlite_if_not_exists=True,
-    )
+    if not _table_exists("users"):
+        op.create_table(
+            "users",
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("username", sa.String(length=255), nullable=True),
+            sa.Column("language", sa.String(length=10), nullable=False, server_default="ru"),
+            sa.Column("mode", sa.String(length=50), nullable=False, server_default="chat"),
+            sa.Column("is_allowed", sa.Boolean(), nullable=False, server_default="1"),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.PrimaryKeyConstraint("user_id"),
+        )
 
     # User settings table
-    op.create_table(
-        "user_settings",
-        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("key", sa.String(length=255), nullable=False),
-        sa.Column("value", sa.Text(), nullable=False),
-        sa.Column("is_encrypted", sa.Boolean(), nullable=False, server_default="0"),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("user_id", "key", name="uq_user_settings_user_id_key"),
-        sqlite_if_not_exists=True,
-    )
-    op.create_index("idx_user_settings_user_id", "user_settings", ["user_id"], unique=False, if_not_exists=True)
+    if not _table_exists("user_settings"):
+        op.create_table(
+            "user_settings",
+            sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("key", sa.String(length=255), nullable=False),
+            sa.Column("value", sa.Text(), nullable=False),
+            sa.Column("is_encrypted", sa.Boolean(), nullable=False, server_default="0"),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("user_id", "key", name="uq_user_settings_user_id_key"),
+        )
+    if not _index_exists("user_settings", "idx_user_settings_user_id"):
+        op.create_index("idx_user_settings_user_id", "user_settings", ["user_id"], unique=False)
 
     # OAuth tokens table
-    op.create_table(
-        "oauth_tokens",
-        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("provider", sa.String(length=50), nullable=False),
-        sa.Column("access_token", sa.Text(), nullable=False),
-        sa.Column("refresh_token", sa.Text(), nullable=True),
-        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("token_meta", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("user_id", "provider", name="uq_oauth_tokens_user_provider"),
-        sqlite_if_not_exists=True,
-    )
-    op.create_index("idx_oauth_tokens_user_id", "oauth_tokens", ["user_id"], unique=False, if_not_exists=True)
+    if not _table_exists("oauth_tokens"):
+        op.create_table(
+            "oauth_tokens",
+            sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("provider", sa.String(length=50), nullable=False),
+            sa.Column("access_token", sa.Text(), nullable=False),
+            sa.Column("refresh_token", sa.Text(), nullable=True),
+            sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("token_meta", sa.Text(), nullable=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("user_id", "provider", name="uq_oauth_tokens_user_provider"),
+        )
+    if not _index_exists("oauth_tokens", "idx_oauth_tokens_user_id"):
+        op.create_index("idx_oauth_tokens_user_id", "oauth_tokens", ["user_id"], unique=False)
 
     # Conversations table
-    op.create_table(
-        "conversations",
-        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("role", sa.String(length=20), nullable=False),
-        sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("timestamp", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-        sqlite_if_not_exists=True,
-    )
-    op.create_index(
-        "idx_conversations_user_timestamp", "conversations", ["user_id", "timestamp"], unique=False, if_not_exists=True
-    )
+    if not _table_exists("conversations"):
+        op.create_table(
+            "conversations",
+            sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("role", sa.String(length=20), nullable=False),
+            sa.Column("content", sa.Text(), nullable=False),
+            sa.Column("timestamp", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+    if not _index_exists("conversations", "idx_conversations_user_timestamp"):
+        op.create_index("idx_conversations_user_timestamp", "conversations", ["user_id", "timestamp"], unique=False)
 
     # Free uses table
-    op.create_table(
-        "free_uses",
-        sa.Column("user_id", sa.Integer(), nullable=False),
-        sa.Column("count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("reset_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("user_id"),
-        sqlite_if_not_exists=True,
-    )
+    if not _table_exists("free_uses"):
+        op.create_table(
+            "free_uses",
+            sa.Column("user_id", sa.Integer(), nullable=False),
+            sa.Column("count", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column("reset_at", sa.DateTime(timezone=True), nullable=True),
+            sa.ForeignKeyConstraint(["user_id"], ["users.user_id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("user_id"),
+        )
 
 
 def downgrade() -> None:

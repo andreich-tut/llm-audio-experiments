@@ -42,3 +42,10 @@ repos:
         pass_filenames: false
         always_run: true
         stages: [pre-commit]
+
+      - id: alembic-migrations-check
+        name: Check Alembic migrations (upgrade/downgrade)
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && python -m alembic upgrade head && python -m alembic downgrade base && python -m alembic upgrade head'
+        language: system
+        pass_filenames: false
+        stages: [manual]

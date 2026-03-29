@@ -10,4 +10,12 @@ echo ""
 pre-commit run --all-files --hook-stage manual
 
 echo ""
+echo "=== Alembic migrations check ==="
+echo ""
+# Test migrations: upgrade -> downgrade -> upgrade (idempotency check)
+python -m alembic upgrade head
+python -m alembic downgrade base
+python -m alembic upgrade head
+
+echo ""
 echo "=== All checks passed! ==="
