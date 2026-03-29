@@ -24,9 +24,9 @@ YANDEX_TOKEN_URL = "https://oauth.yandex.ru/token"
 
 # Required scopes for Yandex.Disk access
 # login:info - Get user login information
-# cloud_api:disk.app_folder - Access to app folder on Yandex.Disk
-# Use space-separated format for multiple scopes
-YANDEX_SCOPES = "login:info cloud_api:disk.app_folder"
+# cloud_api:disk.read - Read access to Yandex.Disk (browse folders/files via REST API)
+# cloud_api:disk.write - Write access to Yandex.Disk (create folders, upload files via REST API)
+YANDEX_SCOPES = "login:info cloud_api:disk.read cloud_api:disk.write"
 
 
 @dataclass

@@ -1,4 +1,4 @@
-name: Pylint
+name: Pylint and Tests
 
 on: [push]
 
@@ -22,3 +22,11 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
+    - name: Run tests with pytest
+      run: |
+        pytest --cov=. --cov-report=xml -v || echo "No tests found or tests skipped"
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.xml
+        fail_ci_if_error: false

@@ -2,6 +2,7 @@
 Pydantic request/response schemas for the Mini App API.
 """
 
+from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -48,3 +49,35 @@ SECTION_KEYS: dict[str, list[str]] = {
 
 # Keys whose values should be masked in GET responses
 SECRET_KEYS: set[str] = {"llm_api_key"}
+
+
+# Yandex.Disk folder browsing schemas
+class YandexDiskFolder(BaseModel):
+    """Represents a folder or file in Yandex.Disk."""
+
+    name: str
+    path: str
+    type: str  # "dir" or "file"
+    created: datetime | None = None
+    modified: datetime | None = None
+
+
+class YandexDiskTreeNode(BaseModel):
+    """Represents a node in the folder tree structure."""
+
+    name: str
+    path: str
+    type: str = "dir"
+    children: list["YandexDiskTreeNode"] = []
+
+
+# Resolve forward references for self-referencing models
+YandexDiskTreeNode.model_rebuild()
+
+
+class YandexDiskTree(BaseModel):
+    """Represents a folder tree structure."""
+
+    name: str
+    path: str
+    children: list[YandexDiskTreeNode]

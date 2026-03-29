@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from interfaces.webapp.routes import oauth, settings, usage
+from interfaces.webapp.routes import oauth, settings, usage, yadisk_folders
 
 # Load .env from project root
 project_root = Path(__file__).parent.parent.parent
@@ -43,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(settings.router, prefix="/api/v1", tags=["settings"])
     app.include_router(oauth.router, prefix="/api/v1", tags=["oauth"])
     app.include_router(usage.router, prefix="/api/v1", tags=["usage"])
+    app.include_router(yadisk_folders.router, prefix="/api/v1", tags=["yandex-disk"])
 
     # Add security scheme for Swagger UI
     if not disable_docs:
