@@ -81,3 +81,22 @@ class YandexDiskTree(BaseModel):
     name: str
     path: str
     children: list[YandexDiskTreeNode]
+
+
+# LLM model selection schemas
+class LLMModel(BaseModel):
+    """Represents an LLM model from OpenRouter."""
+
+    id: str
+    name: str
+    description: str | None = None
+    context_length: int | None = None
+    pricing: dict | None = None
+    is_free: bool = False
+
+
+class LLMModelsResponse(BaseModel):
+    """Response for listing available LLM models."""
+
+    models: list[LLMModel]
+    total: int
